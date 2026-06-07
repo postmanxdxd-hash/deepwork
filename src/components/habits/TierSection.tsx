@@ -17,6 +17,7 @@ interface TierSectionProps {
   onTextChange: (habitId: string, content: string) => void;
   onDeepWork: (habitId: string, blocks: number) => void;
   onGym: (habitId: string, sessions: number) => void;
+  onEditHabit?: (habit: Habit) => void;
   gymLogDate: string;
 }
 
@@ -30,6 +31,7 @@ export function TierSection({
   onTextChange,
   onDeepWork,
   onGym,
+  onEditHabit,
   gymLogDate,
 }: TierSectionProps) {
   if (!habits.length) return null;
@@ -102,6 +104,7 @@ export function TierSection({
               tier={tier}
               log={log}
               onChange={(c) => onTextChange(habit.id, c)}
+              onEdit={onEditHabit ? () => onEditHabit(habit) : undefined}
               multiline={habit.cadence === "weekly"}
               placeholder={
                 habit.cadence === "weekly"
@@ -121,6 +124,7 @@ export function TierSection({
             tier={tier}
             log={log}
             onCycle={() => onCycle(habit.id)}
+            onEdit={onEditHabit ? () => onEditHabit(habit) : undefined}
           />
         );
       })}

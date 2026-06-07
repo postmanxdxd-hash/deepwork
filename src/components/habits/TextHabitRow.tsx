@@ -9,6 +9,7 @@ interface TextHabitRowProps {
   tier: Tier;
   log: DailyLog | undefined;
   onChange: (content: string) => void;
+  onEdit?: () => void;
   multiline?: boolean;
   placeholder?: string;
 }
@@ -18,6 +19,7 @@ export function TextHabitRow({
   tier,
   log,
   onChange,
+  onEdit,
   multiline = false,
   placeholder,
 }: TextHabitRowProps) {
@@ -40,7 +42,17 @@ export function TextHabitRow({
           : undefined
       }
     >
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-2 mb-2">
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-soft)] cursor-pointer"
+            aria-label={`Rename ${habit.name}`}
+          >
+            ✏️
+          </button>
+        )}
         <span className="text-xl w-7 text-center shrink-0">{habit.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-[var(--text)]">

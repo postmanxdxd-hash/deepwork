@@ -19,7 +19,7 @@ const CADENCES: { value: Cadence; label: string }[] = [
 ];
 
 function inputClass() {
-  return "w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
+  return "w-full min-h-[44px] rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 }
 
 export function HabitEditorRow({
@@ -39,48 +39,77 @@ export function HabitEditorRow({
   const [icon, setIcon] = useState(habit.icon);
   const [type, setType] = useState(habit.type);
   const [cadence, setCadence] = useState(habit.cadence);
+  const [dirty, setDirty] = useState(false);
+  const [rowSaving, setRowSaving] = useState(false);
+  const [rowMessage, setRowMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setName(habit.name);
     setIcon(habit.icon);
     setType(habit.type);
     setCadence(habit.cadence);
+    setDirty(false);
   }, [habit.id, habit.name, habit.icon, habit.type, habit.cadence]);
 
-  const saveField = async (fields: Parameters<typeof updateHabit>[2]) => {
-    await updateHabit(supabase, habit.id, fields);
-    await onSaved();
+  const markDirty = () => setDirty(true);
+
+  const handleSave = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setRowMessage("Name required");
+      return;
+    }
+    setRowSaving(true);
+    setRowMessage(null);
+    try {
+      await updateHabit(supabase, habit.id, {
+        name: trimmed,
+        icon: icon.trim() || habit.icon,
+        type,
+        cadence,
+      });
+      await onSaved();
+      setDirty(false);
+      setRowMessage("Saved");
+      setTimeout(() => setRowMessage(null), 2000);
+    } catch (e) {
+      setRowMessage(e instanceof Error ? e.message : "Error");
+    } finally {
+      setRowSaving(false);
+    }
   };
 
   return (
-    <div className="rounded-lg bg-[var(--bg)] p-2.5 space-y-2">
-      <div className="flex gap-2">
-        <input
-          className={inputClass() + " w-12 text-center"}
-          value={icon}
-          maxLength={4}
-          onChange={(e) => setIcon(e.target.value)}
-          onBlur={() => {
-            if (icon !== habit.icon) saveField({ icon });
-          }}
-        />
-        <input
-          className={inputClass() + " flex-1"}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={() => {
-            if (name.trim() && name !== habit.name) saveField({ name: name.trim() });
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.currentTarget.blur();
-            }
-          }}
-        />
+    <div className="rounded-lg bg-[var(--bg)] p-3 space-y-3 border border-[var(--border)]">
+      <div className="flex gap-2 items-end">
+        <div className="shrink-0">
+          <label className="text-[10px] text-[var(--text-muted)] block mb-1">Emoji</label>
+          <input
+            className={inputClass() + " w-14 text-center text-lg"}
+            value={icon}
+            maxLength={4}
+            onChange={(e) => {
+              setIcon(e.target.value);
+              markDirty();
+            }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <label className="text-[10px] text-[var(--text-muted)] block mb-1">Habit name</label>
+          <input
+            className={inputClass()}
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              markDirty();
+            }}
+          />
+        </div>
         <button
           type="button"
           onClick={onDelete}
-          className="text-[var(--danger)] text-xs px-2 cursor-pointer hover:bg-[var(--danger)]/10 rounded-lg"
+          className="shrink-0 w-11 h-11 rounded-lg text-[var(--danger)] cursor-pointer hover:bg-[var(--danger)]/10"
+          aria-label="Delete habit"
         >
           ✕
         </button>
@@ -89,11 +118,10 @@ export function HabitEditorRow({
         <select
           className={inputClass()}
           value={type}
-          disabled={saving}
+          disabled={saving || rowSaving}
           onChange={(e) => {
-            const v = e.target.value as HabitType;
-            setType(v);
-            saveField({ type: v });
+            setType(e.target.value as HabitType);
+            markDirty();
           }}
         >
           {HABIT_TYPES.map((t) => (
@@ -105,11 +133,10 @@ export function HabitEditorRow({
         <select
           className={inputClass()}
           value={cadence}
-          disabled={saving}
+          disabled={saving || rowSaving}
           onChange={(e) => {
-            const v = e.target.value as Cadence;
-            setCadence(v);
-            saveField({ cadence: v });
+            setCadence(e.target.value as Cadence);
+            markDirty();
           }}
         >
           {CADENCES.map((c) => (
@@ -118,6 +145,19 @@ export function HabitEditorRow({
             </option>
           ))}
         </select>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || rowSaving || saving}
+          className="flex-1 min-h-[44px] rounded-xl bg-[var(--accent)] text-white text-sm font-semibold cursor-pointer disabled:opacity-40"
+        >
+          {rowSaving ? "Saving..." : "Save"}
+        </button>
+        {rowMessage && (
+          <span className="text-xs text-[var(--success)] font-medium">{rowMessage}</span>
+        )}
       </div>
     </div>
   );

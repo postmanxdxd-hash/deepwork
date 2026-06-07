@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/components/providers/AppProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
-import { RubricEditor } from "@/components/settings/RubricEditor";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push/client";
 import type { ThemeMode } from "@/lib/types";
 
@@ -96,7 +96,18 @@ export default function SettingsPage() {
         </p>
       )}
 
-      <RubricEditor />
+      <section className="card p-4 mb-4">
+        <h2 className="text-sm font-bold mb-1">Edit habit names</h2>
+        <p className="text-xs text-[var(--text-muted)] mb-3">
+          Rename religious habits, change tiers, add or remove habits.
+        </p>
+        <Link
+          href="/habits"
+          className="inline-flex w-full justify-center rounded-xl bg-[var(--accent)] text-white py-3 text-sm font-semibold"
+        >
+          Open habit editor →
+        </Link>
+      </section>
 
       {/* Notifications */}
       <section className="card p-4 mb-4">

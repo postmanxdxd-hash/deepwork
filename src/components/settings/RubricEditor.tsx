@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/components/providers/AppProvider";
 import {
@@ -23,9 +23,20 @@ export function RubricEditor() {
   const { rubric, tiers, habits, refresh } = useApp();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [expandedTier, setExpandedTier] = useState<string | null>(
-    tiers[0]?.id ?? null
-  );
+  const [expandedTiers, setExpandedTiers] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setExpandedTiers(new Set(tiers.map((t) => t.id)));
+  }, [tiers]);
+
+  const toggleTier = (id: string) => {
+    setExpandedTiers((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const showMsg = (msg: string) => {
     setMessage(msg);
@@ -65,6 +76,10 @@ export function RubricEditor() {
         )}
       </div>
 
+      <p className="text-xs text-[var(--text-muted)] mb-4">
+        All tiers start expanded. Edit the name, then tap <strong>Save</strong> on each habit.
+      </p>
+
       <label className="block text-xs text-[var(--text-muted)] mb-1">Rubric name</label>
       <input
         className={inputClass() + " mb-4"}
@@ -80,13 +95,13 @@ export function RubricEditor() {
 
       <div className="space-y-3">
         {tiers.map((tier) => {
-          const open = expandedTier === tier.id;
+          const open = expandedTiers.has(tier.id);
           const th = tierHabits(tier.id);
           return (
             <div key={tier.id} className="rounded-xl border border-[var(--border)] overflow-hidden">
               <button
                 type="button"
-                onClick={() => setExpandedTier(open ? null : tier.id)}
+                onClick={() => toggleTier(tier.id)}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-left cursor-pointer transition-soft hover:bg-[var(--bg)]"
                 style={{ background: open ? tier.color_bg : undefined }}
               >

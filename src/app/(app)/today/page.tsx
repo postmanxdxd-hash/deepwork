@@ -6,6 +6,8 @@ import { WeekStrip } from "@/components/layout/WeekStrip";
 import { ScoreCards } from "@/components/layout/ScoreCards";
 import { StreakBadge } from "@/components/layout/StreakBadge";
 import { TierSection } from "@/components/habits/TierSection";
+import { HabitRenameModal } from "@/components/habits/HabitRenameModal";
+import type { Habit } from "@/lib/types";
 import { formatDisplayDate, formatDateKey, formatMonthYear } from "@/lib/dates";
 import {
   calcDayScore,
@@ -35,6 +37,7 @@ export default function TodayPage() {
   const todayStr = formatDateKey(new Date());
   const todayIdx = weekDates.indexOf(todayStr);
   const [selectedDay, setSelectedDay] = useState(todayIdx >= 0 ? todayIdx : 0);
+  const [renameHabit, setRenameHabit] = useState<Habit | null>(null);
 
   const dateKey = weekDates[selectedDay];
   const gymLogDate = weekDates[weekDates.length - 1];
@@ -147,8 +150,15 @@ export default function TodayPage() {
             onTextChange={handleTextChange}
             onDeepWork={(id, b) => updateDeepWork(id, dateKey, b)}
             onGym={(id, s) => updateGym(id, gymLogDate, s)}
+            onEditHabit={setRenameHabit}
           />
         ))}
+
+        <HabitRenameModal
+          habit={renameHabit}
+          open={Boolean(renameHabit)}
+          onClose={() => setRenameHabit(null)}
+        />
 
         {/* Benchmarks */}
         <div className="card p-4 mt-2">
