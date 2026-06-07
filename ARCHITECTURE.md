@@ -43,7 +43,7 @@ Personalized habit tracking web app with points-based scoring, daily prompts, jo
 | Styling | Tailwind CSS 4 + CSS variables | Responsive, light/dark theming |
 | Auth & DB | Supabase (Auth + PostgreSQL) | Login, cloud sync, Row Level Security |
 | Hosting | Vercel | Production deploy, serverless functions |
-| Push | Web Push API + `web-push` | Phone notifications (with external cron on Hobby plan) |
+| Push | In-app browser notifications only | Reminders while app is open |
 | Local cache | IndexedDB-ready architecture via client state | Fast logging UX |
 
 ---
@@ -54,9 +54,9 @@ Personalized habit tracking web app with points-based scoring, daily prompts, jo
 ┌─────────────────────────────────────────────────────────────┐
 │                     Browser (PWA)                           │
 │  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐ │
-│  │ Today/Week  │  │ DailyPrompts │  │ Service Worker      │ │
-│  │ History     │  │ RubricEditor │  │ (push + click)      │ │
-│  │ Notes       │  │ ReminderChk  │  └─────────────────────┘ │
+│  │ Today/Week  │  │ MitInlineField│  │ ReminderChecker     │ │
+│  │ History     │  │ FajrShortcut  │  └─────────────────────┘ │
+│  │ Notes       │  │ RubricEditor  │                          │
 │  └──────┬──────┘  └──────┬───────┘                          │
 │         │                │                                   │
 │         └────────┬───────┘                                   │
@@ -69,20 +69,14 @@ Personalized habit tracking web app with points-based scoring, daily prompts, jo
 ┌──────────────────────────────────────────────────────────────┐
 │                      Supabase                                │
 │   Auth │ profiles │ rubrics │ tiers │ habits │ daily_logs   │
-│        │ journal_notes │ push_subscriptions                  │
-└──────────────────────────────────────────────────────────────┘
-                   │
-                   ▼
-┌──────────────────────────────────────────────────────────────┐
-│              Next.js API Routes (Vercel)                     │
-│   /api/push/subscribe │ /api/cron/reminders │ /api/export/pdf│
+│        │ journal_notes                                      │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 **Request flow:**
 1. User opens app → middleware refreshes Supabase session
 2. App layout loads profile + rubric + logs into `AppProvider`
-3. `DailyPrompts` checks MIT/highlight state → shows modals if needed
+3. Today view shows MIT inline field, Fajr shortcut, score cards with MVD indicator
 4. User logs habits → `upsertLog` writes to `daily_logs`
 5. Scoring recalculates client-side from logs + rubric
 
@@ -91,12 +85,12 @@ Personalized habit tracking web app with points-based scoring, daily prompts, jo
 ## Data Model
 
 ### `profiles`
-User settings: theme, timezone (`Asia/Beirut`), morning/evening reminder toggles.
+User settings: theme, timezone (`Asia/Beirut`), morning/evening reminder toggles, `mvd_threshold` (default 10).
 
 ### `rubrics` → `tiers` → `habits`
 Customizable scoring structure:
 - **Tiers:** label, done/attempted/blank points, colors, sort order
-- **Habits:** name, icon, type, cadence, `special_config`
+- **Habits:** name, icon, type, cadence, `role` (`mit` | `highlight` | null), `special_config`
 
 ### Habit types
 
@@ -104,26 +98,23 @@ Customizable scoring structure:
 |------|----------|
 | `standard` | Tap to cycle: blank → done → attempted → blank |
 | `text` | Write content = done; empty = blank penalty |
-| `deepwork` | 0–3 blocks of 30 min → 0/2/5/9 pts |
+| `deepwork` | 25-min blocks, no logging cap → 0/2/5/9 pts (3+ blocks = +9) |
 | `gym` | Weekly session count → 0–5 scale |
 
-### Habit roles (`special_config.role`)
+### Habit roles (`habits.role`)
 
 | Role | Purpose |
 |------|---------|
-| `mit` | Single Most Important Task — morning popup |
-| `highlight` | Highlight of the Day — evening popup |
+| `mit` | Single Most Important Task — inline field at top of Today |
+| `highlight` | Highlight of the Day — text habit in rubric |
 
-Identified by role or name fallback (`lib/habits/identify.ts`).
+Identified by dedicated `role` column only (`lib/habits/identify.ts`).
 
 ### `daily_logs`
 One row per user + habit + date: status, content, deepwork_blocks, gym_sessions.
 
 ### `journal_notes`
 Free-form notes/quotes with `note_date` — browsable collection by day.
-
-### `push_subscriptions` + `reminder_sent_log`
-Web push endpoints and deduplication for morning/evening reminders.
 
 ---
 
@@ -135,15 +126,15 @@ Web push endpoints and deduplication for morning/evening reminders.
 
 | Tier | Done | Attempted | Blank |
 |------|------|-----------|-------|
-| Easy | +1 | 0 | −1 |
-| Medium | +2 | 0 | −2 |
-| Hard | +3 | +1 | −3 |
-| Hard+ | +4 | +1 | −4 |
-| Fajr | +4 | +1 | −4 |
+| Easy | +1 | 0 | 0 |
+| Medium | +2 | 0 | −1 |
+| Hard | +3 | +1 | −1 |
+| Hard+ | +4 | +1 | −2 |
+| Fajr | +4 | +1 | −3 |
 
 ### Special scoring
-- **Deep Work:** cumulative blocks `[0, 2, 5, 9]`
-- **Gym:** weekly `{0–2: −5, 3: +5, 4: +10, 5: +15}`
+- **Deep Work:** 25-min blocks, unlimited count → `[0, 2, 5, 9]` (3+ blocks score +9)
+- **Gym:** weekly `{0–2: −5, 3: +5, 4: +10, 5: +15}` — shown on Week/History only, excluded from Today week total
 - **Text habits:** non-empty = done points; empty = blank penalty
 - **Weekly Review:** scored once per week (Hard+ tier)
 
@@ -165,14 +156,16 @@ Web push endpoints and deduplication for morning/evening reminders.
 ## Features
 
 ### Core habit tracking
-- Daily view with week strip, score cards, progress bar, streak badges
-- Weekly grid (habits × 7 days)
-- 8-week history with completion stats
-- Full rubric editor (rename/add/delete tiers & habits)
+- Daily view with week strip, score cards, MVD indicator, Fajr shortcut, MIT inline field
+- Weekly grid (habits × 7 days) with gym score shown separately
+- 4-week history with completion stats
+- Full rubric editor via Settings → `/habits`
 
-### Daily prompts
-- **MIT popup:** On every app open until filled; snooze hides for current session only; re-prompts on next visit
-- **Highlight popup:** After 5 PM Lebanon time; skippable for the day
+### Today UX
+- **MIT inline field:** Persistent at top of Today, never blocking
+- **Fajr shortcut:** One-tap "Mark Fajr done" when unlogged
+- **Never miss twice:** Amber banner when yesterday's score ≤ 0
+- **Minimum viable day:** Configurable threshold (default +10) shows "Good enough for today"
 
 ### Journal notes
 - **Notes tab:** Write quotes, reminders, ideas
@@ -181,10 +174,7 @@ Web push endpoints and deduplication for morning/evening reminders.
 
 ### Notifications
 - Morning 7:30 AM + evening 9:00 PM (Asia/Beirut)
-- In-app when browser open; Web Push when subscribed + deployed
-
-### Export
-- Weekly report download (text summary via `/api/export/pdf`)
+- In-app only when browser is open (`ReminderChecker`)
 
 ### Theming
 - Light / dark / system preference
@@ -201,9 +191,10 @@ Web push endpoints and deduplication for morning/evening reminders.
 | `/onboarding` | Choose June 2026 or blank template |
 | `/today` | Main dashboard + habit logging |
 | `/week` | Weekly grid overview |
-| `/history` | Past 8 weeks stats |
+| `/history` | Past 4 weeks stats |
 | `/notes` | Journal notes collection |
-| `/settings` | Rubric editor, theme, notifications, export, account |
+| `/habits` | Full rubric editor (linked from Settings) |
+| `/settings` | MVD threshold, theme, in-app reminders, account |
 
 ---
 
@@ -212,24 +203,14 @@ Web push endpoints and deduplication for morning/evening reminders.
 | Component | Role |
 |-----------|------|
 | `AppProvider` | Global state: rubric, logs, notes, scoring context |
-| `DailyPrompts` | MIT + highlight modals |
-| `PromptModal` | Reusable popup UI |
+| `MitInlineField` | Persistent MIT text input on Today |
+| `FajrShortcut` | One-tap Fajr done button |
 | `RubricEditor` | Full tier/habit CRUD |
 | `HabitEditorRow` | Controlled habit name/icon (fixes rename bug) |
 | `TierSection` | Renders habits by tier on Today view |
 | `WeekStrip` | Sun–Sat day picker with scores |
 | `WeeklyGrid` | Spreadsheet-style week view |
 | `ReminderChecker` | In-browser notification scheduler |
-
----
-
-## API Routes
-
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/push/subscribe` | POST/DELETE | Save/remove Web Push subscription |
-| `/api/cron/reminders` | GET | Send scheduled push (Bearer `CRON_SECRET`) |
-| `/api/export/pdf` | GET | Download weekly text report |
 
 ---
 
@@ -246,12 +227,8 @@ Web push endpoints and deduplication for morning/evening reminders.
 
 | Trigger | Time | Mechanism |
 |---------|------|-----------|
-| Morning | 7:30 AM Asia/Beirut | Push + in-app |
-| Evening | 9:00 PM Asia/Beirut | Push + in-app |
-| MIT popup | Every app open until filled | `DailyPrompts` + sessionStorage snooze |
-| Highlight popup | After 5 PM, skippable | `DailyPrompts` + localStorage skip |
-
-**Vercel Hobby:** No minute-level cron. Use [cron-job.org](https://cron-job.org) to hit `/api/cron/reminders` or rely on in-app reminders.
+| Morning | 7:30 AM Asia/Beirut | In-app (`ReminderChecker`) |
+| Evening | 9:00 PM Asia/Beirut | In-app (`ReminderChecker`) |
 
 ---
 
@@ -261,12 +238,10 @@ Web push endpoints and deduplication for morning/evening reminders.
 src/
 ├── app/
 │   ├── (auth)/          login, signup, forgot-password
-│   ├── (app)/           today, week, history, notes, settings
+│   ├── (app)/           today, week, history, notes, settings, habits
 │   ├── onboarding/
-│   └── api/             push, cron, export
 ├── components/
-│   ├── habits/          HabitRow, TextHabitRow, DeepWorkRow, GymRow, TierSection
-│   ├── prompts/         DailyPrompts, PromptModal
+│   ├── habits/          HabitRow, MitInlineField, FajrShortcut, TierSection
 │   ├── settings/        RubricEditor, HabitEditorRow
 │   ├── layout/          AppNav, WeekStrip, ScoreCards, StreakBadge
 │   ├── grid/            WeeklyGrid
@@ -275,14 +250,16 @@ src/
 ├── lib/
 │   ├── scoring/         Points, streaks, week quality
 │   ├── rubric/          Templates, seed, editor actions
-│   ├── habits/          MIT/highlight identification
+│   ├── habits/          Role identification, Fajr finder
 │   ├── notes/           Journal CRUD
 │   ├── reminders/       Timezone helpers
-│   ├── push/            Web Push client + server
 │   └── supabase/        Client, server, middleware
 supabase/
 ├── schema.sql
 └── migrations/
+    ├── 002_reminders_and_push.sql
+    ├── 003_journal_notes.sql
+    └── 004_role_enum_and_mvd_threshold.sql
 ```
 
 ---
@@ -293,11 +270,6 @@ supabase/
 |----------|----------|---------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes | Client-side Supabase key |
-| `SUPABASE_SERVICE_ROLE_KEY` | For push cron | Admin DB access |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | For push | Web Push public key |
-| `VAPID_PRIVATE_KEY` | For push | Web Push private key |
-| `VAPID_SUBJECT` | For push | mailto: contact |
-| `CRON_SECRET` | For push cron | Protects cron endpoint |
 
 ---
 
@@ -315,5 +287,6 @@ See [DEPLOY.md](./DEPLOY.md) for step-by-step setup.
 ## Migrations (run in order)
 
 1. `supabase/schema.sql` — base schema
-2. `supabase/migrations/002_reminders_and_push.sql` — push + reminder columns
+2. `supabase/migrations/002_reminders_and_push.sql` — reminder columns
 3. `supabase/migrations/003_journal_notes.sql` — notes collection
+4. `supabase/migrations/004_role_enum_and_mvd_threshold.sql` — habit roles, MVD threshold, penalty backfill

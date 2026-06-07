@@ -8,6 +8,8 @@ interface ScoreCardsProps {
   weekScore: number;
   doneCount: number;
   totalCount: number;
+  mvdThreshold?: number;
+  showMvd?: boolean;
 }
 
 export function ScoreCards({
@@ -15,6 +17,8 @@ export function ScoreCards({
   weekScore,
   doneCount,
   totalCount,
+  mvdThreshold = 10,
+  showMvd = false,
 }: ScoreCardsProps) {
   const weekLabel = getWeekQualityLabel(weekScore);
   const weekColor =
@@ -25,6 +29,8 @@ export function ScoreCards({
         : weekScore >= 0
           ? "var(--warning)"
           : "var(--danger)";
+
+  const mvdMet = showMvd && dayScore >= mvdThreshold;
 
   return (
     <div className="flex gap-2.5">
@@ -41,6 +47,11 @@ export function ScoreCards({
         <div className="text-[10px] text-white/60 mt-1">
           {doneCount}/{totalCount} done
         </div>
+        {mvdMet && (
+          <div className="text-[10px] font-semibold text-[var(--success)] mt-1.5">
+            Good enough for today
+          </div>
+        )}
       </div>
       <div className="flex-1 rounded-2xl bg-white/10 p-3">
         <div className="text-[10px] text-white/60 mb-1 tracking-wide">THIS WEEK</div>

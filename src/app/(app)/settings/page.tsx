@@ -6,13 +6,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/components/providers/AppProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
-import { subscribeToPush, unsubscribeFromPush } from "@/lib/push/client";
 import type { ThemeMode } from "@/lib/types";
 
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { profile, weekDates, refresh } = useApp();
+  const { profile, refresh } = useApp();
   const { theme, setTheme } = useTheme();
 
   const [morningEnabled, setMorningEnabled] = useState(
@@ -21,9 +20,11 @@ export default function SettingsPage() {
   const [eveningEnabled, setEveningEnabled] = useState(
     profile?.reminder_evening_enabled ?? true
   );
+  const [mvdThreshold, setMvdThreshold] = useState(
+    String(profile?.mvd_threshold ?? 10)
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [pushStatus, setPushStatus] = useState<string | null>(null);
 
   const showMsg = (msg: string) => {
     setMessage(msg);
@@ -46,27 +47,6 @@ export default function SettingsPage() {
   };
 
   const handleRemindersSave = async () => {
-    const anyEnabled = morningEnabled || eveningEnabled;
-
-    if (anyEnabled) {
-      try {
-        await subscribeToPush();
-        setPushStatus("Push enabled — add app to home screen for phone alerts");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Could not enable push";
-        setPushStatus(msg);
-        if (!msg.includes("permission denied")) {
-          showMsg("Saved settings; push may need VAPID keys (see README)");
-        }
-      }
-    } else {
-      try {
-        await unsubscribeFromPush();
-      } catch {
-        /* ignore */
-      }
-    }
-
     await saveProfile({
       timezone: "Asia/Beirut",
       reminder_morning_enabled: morningEnabled,
@@ -76,8 +56,13 @@ export default function SettingsPage() {
     });
   };
 
-  const exportPdf = () => {
-    window.open(`/api/export/pdf?weekStart=${weekDates[0]}`, "_blank");
+  const handleMvdSave = async () => {
+    const parsed = parseInt(mvdThreshold, 10);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      showMsg("Enter a valid number (0 or higher)");
+      return;
+    }
+    await saveProfile({ mvd_threshold: parsed });
   };
 
   const signOut = async () => {
@@ -109,12 +94,34 @@ export default function SettingsPage() {
         </Link>
       </section>
 
-      {/* Notifications */}
       <section className="card p-4 mb-4">
-        <h2 className="text-sm font-bold mb-1">Phone notifications</h2>
+        <h2 className="text-sm font-bold mb-1">Minimum viable day</h2>
+        <p className="text-xs text-[var(--text-muted)] mb-3">
+          When your daily score reaches this value, Today shows &quot;Good enough for today&quot;.
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min={0}
+            value={mvdThreshold}
+            onChange={(e) => setMvdThreshold(e.target.value)}
+            className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={handleMvdSave}
+            disabled={saving}
+            className="rounded-xl bg-[var(--accent)] text-white px-4 py-2 text-sm font-semibold cursor-pointer disabled:opacity-50"
+          >
+            Save
+          </button>
+        </div>
+      </section>
+
+      <section className="card p-4 mb-4">
+        <h2 className="text-sm font-bold mb-1">In-app reminders</h2>
         <p className="text-xs text-[var(--text-muted)] mb-4">
-          Lebanon time (Asia/Beirut). For alerts when the app is closed: add to
-          home screen, enable notifications, and deploy with VAPID keys (see README).
+          Lebanon time (Asia/Beirut). Reminders appear while the app is open in your browser.
         </p>
 
         <label className="flex items-center gap-3 mb-3 cursor-pointer">
@@ -141,23 +148,16 @@ export default function SettingsPage() {
           </span>
         </label>
 
-        {pushStatus && (
-          <p className="text-xs text-[var(--text-muted)] mb-3 bg-[var(--bg)] rounded-lg px-3 py-2">
-            {pushStatus}
-          </p>
-        )}
-
         <button
           type="button"
           onClick={handleRemindersSave}
           disabled={saving}
           className="rounded-xl bg-[var(--accent)] text-white px-4 py-2 text-sm font-semibold cursor-pointer disabled:opacity-50"
         >
-          Save notifications
+          Save reminders
         </button>
       </section>
 
-      {/* Appearance */}
       <section className="card p-4 mb-4">
         <h2 className="text-sm font-bold mb-3">Appearance</h2>
         <div className="flex gap-2">
@@ -178,19 +178,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Export */}
-      <section className="card p-4 mb-4">
-        <h2 className="text-sm font-bold mb-3">Export</h2>
-        <button
-          type="button"
-          onClick={exportPdf}
-          className="rounded-xl border border-[var(--accent)] text-[var(--accent)] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[var(--accent-soft)] transition-soft"
-        >
-          Export weekly report
-        </button>
-      </section>
-
-      {/* Account */}
       <section className="card p-4">
         <h2 className="text-sm font-bold mb-3">Account</h2>
         <p className="text-sm text-[var(--text-muted)] mb-4">{profile?.email}</p>

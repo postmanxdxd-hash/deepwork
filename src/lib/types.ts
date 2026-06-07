@@ -17,6 +17,8 @@ export interface Tier {
   color_text: string;
 }
 
+export type HabitRole = "mit" | "highlight";
+
 export interface Habit {
   id: string;
   tier_id: string;
@@ -24,6 +26,7 @@ export interface Habit {
   icon: string;
   type: HabitType;
   cadence: Cadence;
+  role: HabitRole | null;
   special_config: Record<string, unknown>;
   sort_order: number;
 }
@@ -60,6 +63,7 @@ export interface Profile {
   onboarding_complete: boolean;
   theme: ThemeMode;
   timezone: string;
+  mvd_threshold: number;
   reminder_morning_enabled: boolean;
   reminder_morning_time: string;
   reminder_evening_enabled: boolean;
@@ -80,7 +84,16 @@ export interface TierWithHabits extends Tier {
   habits: Habit[];
 }
 
+export const DEEPWORK_BLOCK_MINUTES = 25;
 export const DEEPWORK_POINTS = [0, 2, 5, 9] as const;
+
+/** Blocks 3+ score the same as 3 (no upper limit on logging). */
+export function pointsForDeepWorkBlocks(blocks: number): number {
+  const n = Math.max(0, Math.floor(blocks));
+  if (n === 0) return DEEPWORK_POINTS[0];
+  if (n >= 3) return DEEPWORK_POINTS[3];
+  return DEEPWORK_POINTS[n] ?? 0;
+}
 export const GYM_POINTS: Record<number, number> = {
   0: -5,
   1: -5,

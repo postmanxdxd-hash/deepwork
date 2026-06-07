@@ -35,7 +35,7 @@ export async function addTier(
       label: "NEW TIER",
       done_pts: 1,
       attempted_pts: 0,
-      blank_pts: -1,
+      blank_pts: 0,
       sort_order: sortOrder,
       color_bg: "#eef2f7",
       color_accent: "#6b9bd1",

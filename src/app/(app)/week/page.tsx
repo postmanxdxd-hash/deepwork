@@ -3,13 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useApp } from "@/components/providers/AppProvider";
 import { WeeklyGrid } from "@/components/grid/WeeklyGrid";
-import { calcWeekScore, getWeekQualityLabel } from "@/lib/scoring";
+import {
+  calcWeekScore,
+  calcGymWeekPoints,
+  getWeekQualityLabel,
+} from "@/lib/scoring";
 
 export default function WeekPage() {
   const router = useRouter();
   const { tiers, habits, weekDates, logs, scoringContext, loading } = useApp();
 
   const weekScore = calcWeekScore(scoringContext, weekDates);
+  const gymScore = calcGymWeekPoints(scoringContext, weekDates);
   const label = getWeekQualityLabel(weekScore);
 
   const handleCellClick = (habitId: string, date: string) => {
@@ -32,7 +37,16 @@ export default function WeekPage() {
           Week score:{" "}
           <span className="font-bold text-[var(--success)]">
             {weekScore > 0 ? `+${weekScore}` : weekScore}
-          </span>{" "}
+          </span>
+          {gymScore !== 0 && (
+            <>
+              {" "}
+              · Gym:{" "}
+              <span className="font-bold text-[var(--success)]">
+                {gymScore > 0 ? `+${gymScore}` : gymScore}
+              </span>
+            </>
+          )}{" "}
           · {label}
         </p>
       </div>

@@ -6,9 +6,9 @@ import type {
   WeekQuality,
 } from "@/lib/types";
 import {
-  DEEPWORK_POINTS,
   GYM_POINTS,
   WEEK_BENCHMARKS,
+  pointsForDeepWorkBlocks,
 } from "@/lib/types";
 
 export interface ScoringContext {
@@ -55,8 +55,7 @@ export function pointsForHabitLog(
   log: DailyLog | undefined
 ): number {
   if (habit.type === "deepwork") {
-    const blocks = Math.min(log?.deepwork_blocks ?? 0, 3);
-    return DEEPWORK_POINTS[blocks] ?? 0;
+    return pointsForDeepWorkBlocks(log?.deepwork_blocks ?? 0);
   }
   if (habit.type === "gym") {
     return 0; // counted at week level
@@ -116,17 +115,29 @@ export function getWeeklyReviewContent(
   return "";
 }
 
-export function calcWeekScoreRaw(
+export function calcGymWeekPoints(
   ctx: ScoringContext,
   weekDates: string[]
 ): number {
+  const gymSessions = getGymSessionsForWeek(ctx, weekDates);
+  return GYM_POINTS[Math.min(Math.max(gymSessions, 0), 5)] ?? -5;
+}
+
+export function calcWeekScoreRaw(
+  ctx: ScoringContext,
+  weekDates: string[],
+  options?: { includeGym?: boolean }
+): number {
+  const includeGym = options?.includeGym ?? false;
+
   let score = weekDates.reduce(
     (sum, dk) => sum + calcDayScore(ctx, dk),
     0
   );
 
-  const gymSessions = getGymSessionsForWeek(ctx, weekDates);
-  score += GYM_POINTS[Math.min(Math.max(gymSessions, 0), 5)] ?? -5;
+  if (includeGym) {
+    score += calcGymWeekPoints(ctx, weekDates);
+  }
 
   const reviewHabit = ctx.habits.find(
     (h) => h.type === "text" && h.cadence === "weekly"
@@ -258,6 +269,17 @@ function getWeekDatesFromStart(weekStart: string): string[] {
     d.setDate(start.getDate() + i);
     return d.toISOString().split("T")[0];
   });
+}
+
+export function wasYesterdayMissed(
+  ctx: ScoringContext,
+  todayKey: string
+): boolean {
+  const today = new Date(todayKey + "T12:00:00");
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayKey = yesterday.toISOString().split("T")[0];
+  return calcDayScore(ctx, yesterdayKey) <= 0;
 }
 
 export function cycleStatus(current: HabitStatus | null): HabitStatus | null {

@@ -63,7 +63,7 @@ export function AppProvider({
   const [weekAnchor, setWeekAnchor] = useState(new Date());
 
   const weekDates = useMemo(() => getWeekDates(weekAnchor), [weekAnchor]);
-  const historyWeekStarts = useMemo(() => getHistoryWeekStarts(8), []);
+  const historyWeekStarts = useMemo(() => getHistoryWeekStarts(4), []);
 
   const allDates = useMemo(() => {
     const dates = new Set<string>();
@@ -96,13 +96,27 @@ export function AppProvider({
         .select("*")
         .eq("id", userId)
         .single();
-      if (prof) setProfile(prof as Profile);
+      if (prof) {
+        setProfile({
+          ...prof,
+          mvd_threshold: prof.mvd_threshold ?? 10,
+        } as Profile);
+      }
 
       const data = await fetchUserRubricData(supabase, userId);
       if (data) {
         setRubric(data.rubric);
         setTiers(data.tiers as Tier[]);
-        setHabits(data.habits as Habit[]);
+        setHabits(
+          (data.habits as Habit[]).map((h) => ({
+            ...h,
+            role:
+              h.role ??
+              (h.special_config?.role === "mit" || h.special_config?.role === "highlight"
+                ? (h.special_config.role as Habit["role"])
+                : null),
+          }))
+        );
       }
 
       const fetchedLogs = await fetchLogsForDates(supabase, userId, allDates);

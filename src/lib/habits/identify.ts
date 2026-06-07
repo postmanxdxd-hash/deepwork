@@ -1,16 +1,18 @@
-import type { Habit } from "@/lib/types";
+import type { Habit, Tier } from "@/lib/types";
 
 export type HabitRole = "mit" | "highlight";
 
 export function getHabitRole(habit: Habit): HabitRole | null {
-  const role = habit.special_config?.role;
-  if (role === "mit" || role === "highlight") return role;
-  const n = habit.name.toLowerCase();
-  if (n.includes("most important task") || n === "mit") return "mit";
-  if (n.includes("highlight")) return "highlight";
+  if (habit.role === "mit" || habit.role === "highlight") return habit.role;
   return null;
 }
 
 export function findHabitByRole(habits: Habit[], role: HabitRole): Habit | undefined {
   return habits.find((h) => getHabitRole(h) === role);
+}
+
+export function findFajrHabit(habits: Habit[], tiers: Tier[]): Habit | undefined {
+  const fajrTier = tiers.find((t) => t.label.toUpperCase().includes("FAJR"));
+  if (!fajrTier) return undefined;
+  return habits.find((h) => h.tier_id === fajrTier.id && h.cadence === "daily");
 }

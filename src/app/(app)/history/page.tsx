@@ -5,6 +5,7 @@ import { useApp } from "@/components/providers/AppProvider";
 import { getWeekDates, formatDisplayDate } from "@/lib/dates";
 import {
   calcWeekScore,
+  calcGymWeekPoints,
   countDoneToday,
   getWeekQualityLabel,
 } from "@/lib/scoring";
@@ -25,6 +26,7 @@ export default function HistoryPage() {
   );
 
   const weekScore = calcWeekScore(ctx, weekDates);
+  const gymScore = calcGymWeekPoints(ctx, weekDates);
   const label = getWeekQualityLabel(weekScore);
 
   const dailyStats = weekDates.map((d) => {
@@ -71,6 +73,11 @@ export default function HistoryPage() {
           <div className="text-2xl font-bold text-[var(--success)]">
             {weekScore > 0 ? `+${weekScore}` : weekScore}
           </div>
+          {gymScore !== 0 && (
+            <div className="text-xs text-[var(--text-muted)] mt-1">
+              Gym: {gymScore > 0 ? `+${gymScore}` : gymScore}
+            </div>
+          )}
           <div className="text-xs text-[var(--text-muted)] mt-1">{label}</div>
         </div>
         <div className="card p-4">

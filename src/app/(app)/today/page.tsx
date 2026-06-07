@@ -7,6 +7,8 @@ import { ScoreCards } from "@/components/layout/ScoreCards";
 import { StreakBadge } from "@/components/layout/StreakBadge";
 import { TierSection } from "@/components/habits/TierSection";
 import { HabitRenameModal } from "@/components/habits/HabitRenameModal";
+import { MitInlineField } from "@/components/habits/MitInlineField";
+import { FajrShortcut } from "@/components/habits/FajrShortcut";
 import type { Habit } from "@/lib/types";
 import { formatDisplayDate, formatDateKey, formatMonthYear } from "@/lib/dates";
 import {
@@ -16,17 +18,22 @@ import {
   calcWeeklyQualityStreak,
   countDoneToday,
   cycleStatus,
+  wasYesterdayMissed,
 } from "@/lib/scoring";
 import { WEEK_BENCHMARKS } from "@/lib/types";
 import { getWeekDates } from "@/lib/dates";
+import { findFajrHabit, findHabitByRole } from "@/lib/habits/identify";
 
 export default function TodayPage() {
   const {
+    tiers,
     tiersWithHabits,
+    habits,
     logs,
     weekDates,
     scoringContext,
     historyWeekStarts,
+    profile,
     updateHabitStatus,
     updateTextContent,
     updateDeepWork,
@@ -41,6 +48,27 @@ export default function TodayPage() {
 
   const dateKey = weekDates[selectedDay];
   const gymLogDate = weekDates[weekDates.length - 1];
+
+  const mitHabit = useMemo(() => findHabitByRole(habits, "mit"), [habits]);
+  const fajrHabit = useMemo(() => findFajrHabit(habits, tiers), [habits, tiers]);
+
+  const mitContent =
+    logs.find((l) => l.habit_id === mitHabit?.id && l.log_date === dateKey)
+      ?.content ?? "";
+
+  const fajrLog = fajrHabit
+    ? logs.find((l) => l.habit_id === fajrHabit.id && l.log_date === dateKey)
+    : undefined;
+  const fajrLogged = fajrLog?.status === "done";
+
+  const tiersForDisplay = useMemo(
+    () =>
+      tiersWithHabits.map((tier) => ({
+        ...tier,
+        habits: tier.habits.filter((h) => h.role !== "mit"),
+      })),
+    [tiersWithHabits]
+  );
 
   const dayScores = useMemo(
     () => weekDates.map((d) => calcDayScore(scoringContext, d)),
@@ -62,6 +90,10 @@ export default function TodayPage() {
     weekDates[0]
   );
 
+  const showNeverMissTwice =
+    dateKey === todayStr && wasYesterdayMissed(scoringContext, todayStr);
+  const mvdThreshold = profile?.mvd_threshold ?? 10;
+
   const handleCycle = async (habitId: string) => {
     const log = logs.find(
       (l) => l.habit_id === habitId && l.log_date === dateKey
@@ -74,6 +106,10 @@ export default function TodayPage() {
     await updateTextContent(habitId, dateKey, content);
   };
 
+  const handleFajrDone = async (habitId: string) => {
+    await updateHabitStatus(habitId, dateKey, "done");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50dvh] text-[var(--text-muted)]">
@@ -84,7 +120,6 @@ export default function TodayPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Header */}
       <div
         className="px-5 pt-6 pb-5 text-white rounded-b-3xl shadow-lg mb-5"
         style={{ background: "var(--bg-header)" }}
@@ -105,6 +140,8 @@ export default function TodayPage() {
             weekScore={weekScore}
             doneCount={done}
             totalCount={total}
+            mvdThreshold={mvdThreshold}
+            showMvd={dateKey === todayStr}
           />
         </div>
         <div className="mt-3">
@@ -112,9 +149,9 @@ export default function TodayPage() {
             habitStreak={topStreak?.streak ?? 0}
             habitName={topStreak?.name ?? ""}
             weeklyStreak={weeklyStreak}
+            showNeverMissTwice={showNeverMissTwice}
           />
         </div>
-        {/* Progress bar */}
         <div className="mt-4">
           <div className="flex justify-between text-[10px] text-white/60 mb-1">
             <span>Progress</span>
@@ -131,17 +168,36 @@ export default function TodayPage() {
         </div>
       </div>
 
-      {/* Habits */}
       <div className="px-4 pb-8">
+        {fajrHabit && (
+          <FajrShortcut
+            habit={fajrHabit}
+            isLogged={fajrLogged}
+            dateKey={dateKey}
+            todayKey={todayStr}
+            onMarkDone={handleFajrDone}
+          />
+        )}
+
+        {mitHabit && (
+          <MitInlineField
+            habit={mitHabit}
+            content={mitContent}
+            dateKey={dateKey}
+            todayKey={todayStr}
+            onSave={handleTextChange}
+          />
+        )}
+
         <p className="text-sm text-[var(--text-muted)] italic mb-4">
           {formatDisplayDate(dateKey)}
         </p>
 
-        {tiersWithHabits.map(({ habits, ...tier }) => (
+        {tiersForDisplay.map(({ habits: tierHabits, ...tier }) => (
           <TierSection
             key={tier.id}
             tier={tier}
-            habits={habits}
+            habits={tierHabits}
             dateKey={dateKey}
             weekDates={weekDates}
             logs={logs}
@@ -160,7 +216,6 @@ export default function TodayPage() {
           onClose={() => setRenameHabit(null)}
         />
 
-        {/* Benchmarks */}
         <div className="card p-4 mt-2">
           <h3 className="text-xs font-bold text-[var(--text)] mb-3">
             Weekly Benchmarks

@@ -40,7 +40,7 @@ export function formatMonthYear(date: Date = new Date()): string {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" }).toUpperCase();
 }
 
-export function getHistoryWeekStarts(count = 8): string[] {
+export function getHistoryWeekStarts(count = 4): string[] {
   const starts: string[] = [];
   for (let i = 0; i < count; i++) {
     starts.push(getWeekDatesForOffset(i)[0]);

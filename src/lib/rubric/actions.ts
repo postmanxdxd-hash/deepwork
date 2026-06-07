@@ -54,6 +54,7 @@ export async function seedRubricFromTemplate(
         type: h.type,
         cadence: h.cadence,
         sort_order: hi,
+        role: h.role ?? null,
         special_config: h.role ? { role: h.role } : {},
       });
       if (habitError) throw habitError;
