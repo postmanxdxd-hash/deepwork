@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { DEEPWORK_BLOCK_MINUTES, pointsForDeepWorkBlocks } from "@/lib/types";
+import { DEEPWORK_BLOCK_MINUTES, DEEPWORK_POINTS, pointsForDeepWorkBlocks } from "@/lib/types";
 
 interface DeepWorkRowProps {
   blocks: number;
@@ -36,7 +36,7 @@ export function DeepWorkRow({ blocks, onChange }: DeepWorkRowProps) {
             {blocks > 3 && (
               <span className="text-[var(--text-muted)] font-normal">
                 {" "}
-                (max pts at 3+)
+                (+{DEEPWORK_POINTS[3]} per block after 3rd)
               </span>
             )}
           </div>

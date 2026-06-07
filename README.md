@@ -9,7 +9,7 @@ Works on **mobile web** and **laptop web** — one responsive app, synced via Su
 - **June 2026 rubric template** (or start blank) with Easy, Medium, Hard, Hard+, and Fajr tiers
 - **Standard habits** — tap to cycle Done / Attempted / Blank
 - **Text habits** — Highlight of the Day, Single Most Important Task, Weekly Review (writing = Done)
-- **Deep Work** — 25-min block scoring (0 → 2 → 5 → 9 pts; 3+ blocks cap at +9)
+- **Deep Work** — 25-min blocks: 1→+2, 2→+5, 3→+9, each block after 3 adds +9 more
 - **Gym** — weekly session scoring
 - **Streaks** — per-habit and weekly-quality (Solid/Excellent)
 - **Views** — Today dashboard, weekly grid, 4-week history

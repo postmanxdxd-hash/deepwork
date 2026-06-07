@@ -133,7 +133,7 @@ Free-form notes/quotes with `note_date` — browsable collection by day.
 | Fajr | +4 | +1 | −3 |
 
 ### Special scoring
-- **Deep Work:** 25-min blocks, unlimited count → `[0, 2, 5, 9]` (3+ blocks score +9)
+- **Deep Work:** 25-min blocks → 1=+2, 2=+5, 3=+9, each extra block +9
 - **Gym:** weekly `{0–2: −5, 3: +5, 4: +10, 5: +15}` — shown on Week/History only, excluded from Today week total
 - **Text habits:** non-empty = done points; empty = blank penalty
 - **Weekly Review:** scored once per week (Hard+ tier)

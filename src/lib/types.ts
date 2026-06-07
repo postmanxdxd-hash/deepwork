@@ -87,12 +87,13 @@ export interface TierWithHabits extends Tier {
 export const DEEPWORK_BLOCK_MINUTES = 25;
 export const DEEPWORK_POINTS = [0, 2, 5, 9] as const;
 
-/** Blocks 3+ score the same as 3 (no upper limit on logging). */
+/** Blocks 1–2 use tiered totals; block 3 = +9, each block after 3 adds another +9. */
 export function pointsForDeepWorkBlocks(blocks: number): number {
   const n = Math.max(0, Math.floor(blocks));
   if (n === 0) return DEEPWORK_POINTS[0];
-  if (n >= 3) return DEEPWORK_POINTS[3];
-  return DEEPWORK_POINTS[n] ?? 0;
+  if (n < 3) return DEEPWORK_POINTS[n] ?? 0;
+  const blockThreePts = DEEPWORK_POINTS[3];
+  return blockThreePts + (n - 3) * blockThreePts;
 }
 export const GYM_POINTS: Record<number, number> = {
   0: -5,
