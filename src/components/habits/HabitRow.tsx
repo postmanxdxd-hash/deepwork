@@ -11,11 +11,29 @@ interface HabitRowProps {
   log: DailyLog | undefined;
   onCycle: () => void;
   onEdit?: () => void;
+  /** Done ↔ unset only — no attempted or blank states. */
+  binary?: boolean;
 }
 
-export function HabitRow({ habit, tier, log, onCycle, onEdit }: HabitRowProps) {
-  const status = log?.status ?? null;
-  const pts = log?.status ? pointsForHabitLog(habit, tier, log) : null;
+export function HabitRow({
+  habit,
+  tier,
+  log,
+  onCycle,
+  onEdit,
+  binary = false,
+}: HabitRowProps) {
+  const rawStatus = log?.status ?? null;
+  const status =
+    binary && rawStatus !== "done" ? null : rawStatus;
+  const pts =
+    status === "done" || (!binary && log?.status)
+      ? pointsForHabitLog(habit, tier, log)
+      : binary
+        ? null
+        : log?.status
+          ? pointsForHabitLog(habit, tier, log)
+          : null;
 
   return (
     <div
@@ -76,9 +94,9 @@ export function HabitRow({ habit, tier, log, onCycle, onEdit }: HabitRowProps) {
             "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shrink-0 border-2 transition-soft",
             status === "done"
               ? "text-white border-transparent"
-              : status === "attempted"
+              : !binary && status === "attempted"
                 ? "border-[var(--warning)] text-[var(--warning)] bg-[var(--warning)]/10"
-                : status === "blank"
+                : !binary && status === "blank"
                   ? "border-[var(--danger)] text-[var(--danger)] bg-[var(--danger)]/10"
                   : "border-[var(--border)] text-[var(--text-muted)]"
           )}
@@ -88,7 +106,13 @@ export function HabitRow({ habit, tier, log, onCycle, onEdit }: HabitRowProps) {
               : undefined
           }
         >
-          {status === "done" ? "X" : status === "attempted" ? "•" : status === "blank" ? "—" : "·"}
+          {status === "done"
+            ? "X"
+            : !binary && status === "attempted"
+              ? "•"
+              : !binary && status === "blank"
+                ? "—"
+                : "·"}
         </div>
       </button>
     </div>

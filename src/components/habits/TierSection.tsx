@@ -1,6 +1,7 @@
 "use client";
 
 import type { DailyLog, Habit, Tier } from "@/lib/types";
+import { isFajrHabit } from "@/lib/habits/identify";
 import { tierPointsLabel } from "@/lib/rubric/templates";
 import { HabitRow } from "./HabitRow";
 import { TextHabitRow } from "./TextHabitRow";
@@ -9,8 +10,8 @@ import { DeepWorkRow } from "./DeepWorkRow";
 interface TierSectionProps {
   tier: Tier;
   habits: Habit[];
+  tiers: Tier[];
   dateKey: string;
-  weekDates: string[];
   logs: DailyLog[];
   onCycle: (habitId: string) => void;
   onTextChange: (habitId: string, content: string) => void;
@@ -21,6 +22,7 @@ interface TierSectionProps {
 export function TierSection({
   tier,
   habits,
+  tiers,
   dateKey,
   logs,
   onCycle,
@@ -93,6 +95,7 @@ export function TierSection({
             habit={habit}
             tier={tier}
             log={log}
+            binary={isFajrHabit(habit, tiers)}
             onCycle={() => onCycle(habit.id)}
             onEdit={onEditHabit ? () => onEditHabit(habit) : undefined}
           />

@@ -80,7 +80,7 @@ export const JUNE_2026_TEMPLATE: TemplateTier[] = [
   {
     label: "FAJR ★",
     done_pts: 4,
-    attempted_pts: 1,
+    attempted_pts: 0,
     blank_pts: -3,
     color_bg: "#f3e8fd",
     color_accent: "#8e44ad",

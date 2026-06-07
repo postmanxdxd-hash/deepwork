@@ -5,6 +5,7 @@ import type {
   Tier,
   WeekQuality,
 } from "@/lib/types";
+import { isFajrTier } from "@/lib/habits/identify";
 import {
   GYM_POINTS,
   WEEK_BENCHMARKS,
@@ -65,6 +66,9 @@ export function pointsForHabitLog(
     return content ? tier.done_pts : tier.blank_pts;
   }
   const status = log?.status;
+  if (isFajrTier(tier)) {
+    return status === "done" ? tier.done_pts : tier.blank_pts;
+  }
   if (!status) return tier.blank_pts;
   if (status === "done") return tier.done_pts;
   if (status === "attempted") return tier.attempted_pts;
@@ -287,6 +291,11 @@ export function cycleStatus(current: HabitStatus | null): HabitStatus | null {
   if (current === "done") return "attempted";
   if (current === "attempted") return "blank";
   return null;
+}
+
+/** Done ↔ unset only (Fajr and other binary habits). */
+export function cycleBinaryStatus(current: HabitStatus | null): HabitStatus | null {
+  return current === "done" ? null : "done";
 }
 
 export function statusSymbol(

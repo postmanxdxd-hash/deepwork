@@ -17,12 +17,17 @@ import {
   calcTopHabitStreak,
   calcWeeklyQualityStreak,
   countDoneToday,
+  cycleBinaryStatus,
   cycleStatus,
   wasYesterdayMissed,
 } from "@/lib/scoring";
 import { WEEK_BENCHMARKS } from "@/lib/types";
 import { getWeekDates } from "@/lib/dates";
-import { findFajrHabit, findHabitByRole } from "@/lib/habits/identify";
+import {
+  findFajrHabit,
+  findHabitByRole,
+  isFajrHabit,
+} from "@/lib/habits/identify";
 import { getTodayTierSections } from "@/lib/habits/todayDisplay";
 
 export default function TodayPage() {
@@ -97,10 +102,14 @@ export default function TodayPage() {
   const mvdThreshold = profile?.mvd_threshold ?? 10;
 
   const handleCycle = async (habitId: string) => {
+    const habit = habits.find((h) => h.id === habitId);
     const log = logs.find(
       (l) => l.habit_id === habitId && l.log_date === dateKey
     );
-    const next = cycleStatus(log?.status ?? null);
+    const next =
+      habit && isFajrHabit(habit, tiers)
+        ? cycleBinaryStatus(log?.status ?? null)
+        : cycleStatus(log?.status ?? null);
     await updateHabitStatus(habitId, dateKey, next);
   };
 
@@ -200,8 +209,8 @@ export default function TodayPage() {
             key={tier.id}
             tier={tier}
             habits={tierHabits}
+            tiers={tiers}
             dateKey={dateKey}
-            weekDates={weekDates}
             logs={logs}
             onCycle={handleCycle}
             onTextChange={handleTextChange}

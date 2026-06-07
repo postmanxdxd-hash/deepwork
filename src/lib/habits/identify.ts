@@ -11,8 +11,17 @@ export function findHabitByRole(habits: Habit[], role: HabitRole): Habit | undef
   return habits.find((h) => getHabitRole(h) === role);
 }
 
+export function isFajrTier(tier: Tier): boolean {
+  return tier.label.toUpperCase().includes("FAJR");
+}
+
+export function isFajrHabit(habit: Habit, tiers: Tier[]): boolean {
+  const tier = tiers.find((t) => t.id === habit.tier_id);
+  return tier ? isFajrTier(tier) : false;
+}
+
 export function findFajrHabit(habits: Habit[], tiers: Tier[]): Habit | undefined {
-  const fajrTier = tiers.find((t) => t.label.toUpperCase().includes("FAJR"));
+  const fajrTier = tiers.find((t) => isFajrTier(t));
   if (!fajrTier) return undefined;
   return habits.find((h) => h.tier_id === fajrTier.id && h.cadence === "daily");
 }
