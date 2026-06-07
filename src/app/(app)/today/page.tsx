@@ -23,6 +23,7 @@ import {
 import { WEEK_BENCHMARKS } from "@/lib/types";
 import { getWeekDates } from "@/lib/dates";
 import { findFajrHabit, findHabitByRole } from "@/lib/habits/identify";
+import { getTodayTierSections } from "@/lib/habits/todayDisplay";
 
 export default function TodayPage() {
   const {
@@ -37,7 +38,6 @@ export default function TodayPage() {
     updateHabitStatus,
     updateTextContent,
     updateDeepWork,
-    updateGym,
     loading,
   } = useApp();
 
@@ -47,7 +47,6 @@ export default function TodayPage() {
   const [renameHabit, setRenameHabit] = useState<Habit | null>(null);
 
   const dateKey = weekDates[selectedDay];
-  const gymLogDate = weekDates[weekDates.length - 1];
 
   const mitHabit = useMemo(() => findHabitByRole(habits, "mit"), [habits]);
   const fajrHabit = useMemo(() => findFajrHabit(habits, tiers), [habits, tiers]);
@@ -60,14 +59,17 @@ export default function TodayPage() {
     ? logs.find((l) => l.habit_id === fajrHabit.id && l.log_date === dateKey)
     : undefined;
   const fajrLogged = fajrLog?.status === "done";
+  const hideFajrInList =
+    Boolean(fajrHabit) && dateKey === todayStr && !fajrLogged;
 
   const tiersForDisplay = useMemo(
     () =>
-      tiersWithHabits.map((tier) => ({
-        ...tier,
-        habits: tier.habits.filter((h) => h.role !== "mit"),
-      })),
-    [tiersWithHabits]
+      getTodayTierSections(tiersWithHabits, {
+        hideMit: true,
+        hideFajr: hideFajrInList,
+        fajrHabitId: fajrHabit?.id,
+      }),
+    [tiersWithHabits, hideFajrInList, fajrHabit?.id]
   );
 
   const dayScores = useMemo(
@@ -201,11 +203,9 @@ export default function TodayPage() {
             dateKey={dateKey}
             weekDates={weekDates}
             logs={logs}
-            gymLogDate={gymLogDate}
             onCycle={handleCycle}
             onTextChange={handleTextChange}
             onDeepWork={(id, b) => updateDeepWork(id, dateKey, b)}
-            onGym={(id, s) => updateGym(id, gymLogDate, s)}
             onEditHabit={setRenameHabit}
           />
         ))}

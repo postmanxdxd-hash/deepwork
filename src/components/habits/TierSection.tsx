@@ -5,7 +5,6 @@ import { tierPointsLabel } from "@/lib/rubric/templates";
 import { HabitRow } from "./HabitRow";
 import { TextHabitRow } from "./TextHabitRow";
 import { DeepWorkRow } from "./DeepWorkRow";
-import { GymRow } from "./GymRow";
 
 interface TierSectionProps {
   tier: Tier;
@@ -16,36 +15,23 @@ interface TierSectionProps {
   onCycle: (habitId: string) => void;
   onTextChange: (habitId: string, content: string) => void;
   onDeepWork: (habitId: string, blocks: number) => void;
-  onGym: (habitId: string, sessions: number) => void;
   onEditHabit?: (habit: Habit) => void;
-  gymLogDate: string;
 }
 
 export function TierSection({
   tier,
   habits,
   dateKey,
-  weekDates,
   logs,
   onCycle,
   onTextChange,
   onDeepWork,
-  onGym,
   onEditHabit,
-  gymLogDate,
 }: TierSectionProps) {
   if (!habits.length) return null;
 
   const logFor = (habitId: string, date: string) =>
     logs.find((l) => l.habit_id === habitId && l.log_date === date);
-
-  const weeklyLogFor = (habitId: string) => {
-    for (let i = weekDates.length - 1; i >= 0; i--) {
-      const log = logFor(habitId, weekDates[i]);
-      if (log?.content?.trim()) return log;
-    }
-    return logFor(habitId, gymLogDate);
-  };
 
   return (
     <section className="mb-5">
@@ -82,21 +68,8 @@ export function TierSection({
             />
           );
         }
-        if (habit.type === "gym") {
-          const log = logFor(habit.id, gymLogDate);
-          return (
-            <GymRow
-              key={habit.id}
-              sessions={log?.gym_sessions ?? 0}
-              onChange={(s) => onGym(habit.id, s)}
-            />
-          );
-        }
         if (habit.type === "text") {
-          const log =
-            habit.cadence === "weekly"
-              ? weeklyLogFor(habit.id)
-              : logFor(habit.id, dateKey);
+          const log = logFor(habit.id, dateKey);
           return (
             <TextHabitRow
               key={habit.id}
@@ -105,13 +78,10 @@ export function TierSection({
               log={log}
               onChange={(c) => onTextChange(habit.id, c)}
               onEdit={onEditHabit ? () => onEditHabit(habit) : undefined}
-              multiline={habit.cadence === "weekly"}
               placeholder={
-                habit.cadence === "weekly"
-                  ? "How was your week? Wins, lessons, focus for next week..."
-                  : habit.name.includes("MIT") || habit.name.includes("Important")
-                    ? "What's the one thing that matters most today?"
-                    : "What was the best part of your day?"
+                habit.name.includes("MIT") || habit.name.includes("Important")
+                  ? "What's the one thing that matters most today?"
+                  : "What was the best part of your day?"
               }
             />
           );
