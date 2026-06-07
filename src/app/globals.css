@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #f4f6fb;
+  --bg-card: #ffffff;
+  --bg-header: linear-gradient(135deg, #2d3a4f 0%, #3d4f6f 100%);
+  --text: #1a1a2e;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #6b9bd1;
+  --accent-soft: rgba(107, 155, 209, 0.15);
+  --success: #5a9e7c;
+  --warning: #d4a054;
+  --danger: #c97070;
+}
+
+.dark {
+  --bg: #1a1d24;
+  --bg-card: #242830;
+  --bg-header: linear-gradient(135deg, #1e2430 0%, #2a3344 100%);
+  --text: #e8eaed;
+  --text-muted: #9ca3af;
+  --border: #374151;
+  --accent: #7eb3e8;
+  --accent-soft: rgba(126, 179, 232, 0.12);
+  --success: #7ec8a0;
+  --warning: #e8b86d;
+  --danger: #e89090;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.transition-soft {
+  transition: all 0.2s ease;
+}
