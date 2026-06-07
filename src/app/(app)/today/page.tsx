@@ -10,7 +10,7 @@ import { HabitRenameModal } from "@/components/habits/HabitRenameModal";
 import { MitInlineField } from "@/components/habits/MitInlineField";
 import { FajrShortcut } from "@/components/habits/FajrShortcut";
 import type { Habit } from "@/lib/types";
-import { formatDisplayDate, formatDateKey, formatMonthYear } from "@/lib/dates";
+import { formatDisplayDate, formatMonthYear, getWeekDates } from "@/lib/dates";
 import {
   calcDayScore,
   calcWeekScore,
@@ -22,13 +22,13 @@ import {
   wasYesterdayMissed,
 } from "@/lib/scoring";
 import { WEEK_BENCHMARKS } from "@/lib/types";
-import { getWeekDates } from "@/lib/dates";
 import {
   findFajrHabit,
   findHabitByRole,
   isFajrHabit,
 } from "@/lib/habits/identify";
 import { getTodayTierSections } from "@/lib/habits/todayDisplay";
+import { getTimePartsInTimezone } from "@/lib/reminders/timezone";
 
 export default function TodayPage() {
   const {
@@ -46,7 +46,8 @@ export default function TodayPage() {
     loading,
   } = useApp();
 
-  const todayStr = formatDateKey(new Date());
+  const timezone = profile?.timezone ?? "Asia/Beirut";
+  const todayStr = getTimePartsInTimezone(new Date(), timezone).dateKey;
   const todayIdx = weekDates.indexOf(todayStr);
   const [selectedDay, setSelectedDay] = useState(todayIdx >= 0 ? todayIdx : 0);
   const [renameHabit, setRenameHabit] = useState<Habit | null>(null);
@@ -216,6 +217,7 @@ export default function TodayPage() {
             onTextChange={handleTextChange}
             onDeepWork={(id, b) => updateDeepWork(id, dateKey, b)}
             onEditHabit={setRenameHabit}
+            timezone={timezone}
           />
         ))}
 

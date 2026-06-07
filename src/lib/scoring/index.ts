@@ -6,6 +6,7 @@ import type {
   WeekQuality,
 } from "@/lib/types";
 import { isFajrTier } from "@/lib/habits/identify";
+import { shouldApplyBlankPenalties } from "@/lib/reminders/timezone";
 import {
   GYM_POINTS,
   WEEK_BENCHMARKS,
@@ -17,6 +18,8 @@ export interface ScoringContext {
   habits: Habit[];
   logs: DailyLog[];
   weekDates: string[];
+  timezone?: string;
+  now?: Date;
 }
 
 function tierById(tiers: Tier[], id: string): Tier | undefined {
@@ -53,7 +56,8 @@ export function effectiveStatus(
 export function pointsForHabitLog(
   habit: Habit,
   tier: Tier,
-  log: DailyLog | undefined
+  log: DailyLog | undefined,
+  applyBlankPenalties = true
 ): number {
   if (habit.type === "deepwork") {
     return pointsForDeepWorkBlocks(log?.deepwork_blocks ?? 0);
@@ -63,19 +67,36 @@ export function pointsForHabitLog(
   }
   if (habit.type === "text") {
     const content = log?.content?.trim();
-    return content ? tier.done_pts : tier.blank_pts;
+    if (content) return tier.done_pts;
+    if (!applyBlankPenalties) return 0;
+    return tier.blank_pts;
   }
   const status = log?.status;
   if (isFajrTier(tier)) {
-    return status === "done" ? tier.done_pts : tier.blank_pts;
+    if (status === "done") return tier.done_pts;
+    if (!applyBlankPenalties && !status) return 0;
+    return tier.blank_pts;
   }
-  if (!status) return tier.blank_pts;
+  if (!status) return applyBlankPenalties ? tier.blank_pts : 0;
   if (status === "done") return tier.done_pts;
   if (status === "attempted") return tier.attempted_pts;
   return tier.blank_pts;
 }
 
+function scoringNow(ctx: ScoringContext): Date {
+  return ctx.now ?? new Date();
+}
+
+function scoringTimezone(ctx: ScoringContext): string {
+  return ctx.timezone ?? "Asia/Beirut";
+}
+
 export function calcDayScore(ctx: ScoringContext, dateKey: string): number {
+  const applyBlank = shouldApplyBlankPenalties(
+    dateKey,
+    scoringTimezone(ctx),
+    scoringNow(ctx)
+  );
   let score = 0;
   for (const habit of ctx.habits) {
     if (habit.type === "gym") continue;
@@ -83,7 +104,7 @@ export function calcDayScore(ctx: ScoringContext, dateKey: string): number {
     const tier = tierById(ctx.tiers, habit.tier_id);
     if (!tier) continue;
     const log = logFor(ctx.logs, habit.id, dateKey);
-    score += pointsForHabitLog(habit, tier, log);
+    score += pointsForHabitLog(habit, tier, log, applyBlank);
   }
   return score;
 }
@@ -148,9 +169,19 @@ export function calcWeekScoreRaw(
   );
   if (reviewHabit) {
     const tier = tierById(ctx.tiers, reviewHabit.tier_id);
+    const lastDay = weekDates[weekDates.length - 1];
+    const applyReviewBlank = shouldApplyBlankPenalties(
+      lastDay,
+      scoringTimezone(ctx),
+      scoringNow(ctx)
+    );
     if (tier) {
       const content = getWeeklyReviewContent(ctx, weekDates);
-      score += content ? tier.done_pts : tier.blank_pts;
+      if (content) {
+        score += tier.done_pts;
+      } else if (applyReviewBlank) {
+        score += tier.blank_pts;
+      }
     }
   }
 

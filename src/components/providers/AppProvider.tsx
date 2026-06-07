@@ -84,8 +84,14 @@ export function AppProvider({
   );
 
   const scoringContext: ScoringContext = useMemo(
-    () => ({ tiers, habits, logs, weekDates }),
-    [tiers, habits, logs, weekDates]
+    () => ({
+      tiers,
+      habits,
+      logs,
+      weekDates,
+      timezone: profile?.timezone ?? "Asia/Beirut",
+    }),
+    [tiers, habits, logs, weekDates, profile?.timezone]
   );
 
   const refresh = useCallback(async () => {

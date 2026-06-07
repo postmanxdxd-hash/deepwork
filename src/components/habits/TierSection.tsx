@@ -3,6 +3,7 @@
 import type { DailyLog, Habit, Tier } from "@/lib/types";
 import { isFajrHabit } from "@/lib/habits/identify";
 import { tierPointsLabel } from "@/lib/rubric/templates";
+import { shouldApplyBlankPenalties } from "@/lib/reminders/timezone";
 import { HabitRow } from "./HabitRow";
 import { TextHabitRow } from "./TextHabitRow";
 import { DeepWorkRow } from "./DeepWorkRow";
@@ -17,6 +18,7 @@ interface TierSectionProps {
   onTextChange: (habitId: string, content: string) => void;
   onDeepWork: (habitId: string, blocks: number) => void;
   onEditHabit?: (habit: Habit) => void;
+  timezone?: string;
 }
 
 export function TierSection({
@@ -29,8 +31,11 @@ export function TierSection({
   onTextChange,
   onDeepWork,
   onEditHabit,
+  timezone = "Asia/Beirut",
 }: TierSectionProps) {
   if (!habits.length) return null;
+
+  const applyBlankPenalties = shouldApplyBlankPenalties(dateKey, timezone);
 
   const logFor = (habitId: string, date: string) =>
     logs.find((l) => l.habit_id === habitId && l.log_date === date);
@@ -78,6 +83,7 @@ export function TierSection({
               habit={habit}
               tier={tier}
               log={log}
+              applyBlankPenalties={applyBlankPenalties}
               onChange={(c) => onTextChange(habit.id, c)}
               onEdit={onEditHabit ? () => onEditHabit(habit) : undefined}
               placeholder={
@@ -96,6 +102,7 @@ export function TierSection({
             tier={tier}
             log={log}
             binary={isFajrHabit(habit, tiers)}
+            applyBlankPenalties={applyBlankPenalties}
             onCycle={() => onCycle(habit.id)}
             onEdit={onEditHabit ? () => onEditHabit(habit) : undefined}
           />

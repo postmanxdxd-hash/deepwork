@@ -12,6 +12,7 @@ interface TextHabitRowProps {
   onEdit?: () => void;
   multiline?: boolean;
   placeholder?: string;
+  applyBlankPenalties?: boolean;
 }
 
 export function TextHabitRow({
@@ -22,10 +23,12 @@ export function TextHabitRow({
   onEdit,
   multiline = false,
   placeholder,
+  applyBlankPenalties = true,
 }: TextHabitRowProps) {
   const content = log?.content ?? "";
   const hasContent = content.trim().length > 0;
-  const pts = hasContent ? tier.done_pts : tier.blank_pts;
+  const emptyPts = applyBlankPenalties ? tier.blank_pts : 0;
+  const pts = hasContent ? tier.done_pts : emptyPts;
 
   return (
     <div
@@ -64,7 +67,12 @@ export function TextHabitRow({
               hasContent ? "text-[var(--success)]" : "text-[var(--text-muted)]"
             )}
           >
-            {hasContent ? `+${pts}` : `${pts} if empty`} pts
+            {hasContent
+              ? `+${pts}`
+              : applyBlankPenalties
+                ? `${pts} if empty`
+                : "not due yet"}
+            {" "}pts
           </div>
         </div>
         {hasContent && (

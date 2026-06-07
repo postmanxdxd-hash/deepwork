@@ -13,6 +13,7 @@ interface HabitRowProps {
   onEdit?: () => void;
   /** Done ↔ unset only — no attempted or blank states. */
   binary?: boolean;
+  applyBlankPenalties?: boolean;
 }
 
 export function HabitRow({
@@ -22,17 +23,18 @@ export function HabitRow({
   onCycle,
   onEdit,
   binary = false,
+  applyBlankPenalties = true,
 }: HabitRowProps) {
   const rawStatus = log?.status ?? null;
   const status =
     binary && rawStatus !== "done" ? null : rawStatus;
   const pts =
     status === "done" || (!binary && log?.status)
-      ? pointsForHabitLog(habit, tier, log)
+      ? pointsForHabitLog(habit, tier, log, applyBlankPenalties)
       : binary
         ? null
         : log?.status
-          ? pointsForHabitLog(habit, tier, log)
+          ? pointsForHabitLog(habit, tier, log, applyBlankPenalties)
           : null;
 
   return (

@@ -1,5 +1,8 @@
 const DEFAULT_TZ = "Asia/Beirut";
 
+/** Habit days start at 4:00 AM local time — unset habits aren't penalized before then. */
+export const HABIT_DAY_START_HOUR = 4;
+
 export function getTimePartsInTimezone(
   date: Date,
   timezone: string = DEFAULT_TZ
@@ -44,4 +47,26 @@ export function matchesTimeSlot(
 
 export function formatTimeHHMM(time: string): string {
   return time.slice(0, 5);
+}
+
+/**
+ * Whether unset/empty habits should receive blank penalties for `dateKey`.
+ * - Future calendar days: no
+ * - Past calendar days: yes
+ * - Today: only from 4:00 AM local time onward
+ */
+export function shouldApplyBlankPenalties(
+  dateKey: string,
+  timezone: string = DEFAULT_TZ,
+  now: Date = new Date()
+): boolean {
+  const { dateKey: todayKey, hour, minute } = getTimePartsInTimezone(
+    now,
+    timezone
+  );
+
+  if (dateKey > todayKey) return false;
+  if (dateKey < todayKey) return true;
+
+  return hour * 60 + minute >= HABIT_DAY_START_HOUR * 60;
 }
