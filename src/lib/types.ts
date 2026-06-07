@@ -46,6 +46,14 @@ export interface DailyLog {
   gym_sessions: number | null;
 }
 
+export interface JournalNote {
+  id: string;
+  user_id: string;
+  content: string;
+  note_date: string;
+  created_at: string;
+}
+
 export interface Profile {
   id: string;
   email: string | null;
@@ -56,9 +64,7 @@ export interface Profile {
   reminder_morning_time: string;
   reminder_evening_enabled: boolean;
   reminder_evening_time: string;
-  /** @deprecated use reminder_evening_* */
   reminder_enabled?: boolean;
-  /** @deprecated use reminder_evening_* */
   reminder_time?: string;
 }
 

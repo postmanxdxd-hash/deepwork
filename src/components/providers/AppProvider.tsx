@@ -14,7 +14,8 @@ import {
   fetchUserRubricData,
   upsertLog,
 } from "@/lib/rubric/actions";
-import type { DailyLog, Habit, Profile, Rubric, Tier, TierWithHabits } from "@/lib/types";
+import { fetchJournalNotes } from "@/lib/notes/actions";
+import type { DailyLog, Habit, JournalNote, Profile, Rubric, Tier, TierWithHabits } from "@/lib/types";
 import { getHistoryWeekStarts, getWeekDates } from "@/lib/dates";
 import type { ScoringContext } from "@/lib/scoring";
 
@@ -25,11 +26,13 @@ interface AppContextValue {
   habits: Habit[];
   tiersWithHabits: TierWithHabits[];
   logs: DailyLog[];
+  journalNotes: JournalNote[];
   loading: boolean;
   weekDates: string[];
   setWeekAnchor: (date: Date) => void;
   weekAnchor: Date;
   refresh: () => Promise<void>;
+  refreshNotes: () => Promise<void>;
   updateHabitStatus: (habitId: string, date: string, status: string | null) => Promise<void>;
   updateTextContent: (habitId: string, date: string, content: string) => Promise<void>;
   updateDeepWork: (habitId: string, date: string, blocks: number) => Promise<void>;
@@ -55,6 +58,7 @@ export function AppProvider({
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<DailyLog[]>([]);
+  const [journalNotes, setJournalNotes] = useState<JournalNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [weekAnchor, setWeekAnchor] = useState(new Date());
 
@@ -103,10 +107,18 @@ export function AppProvider({
 
       const fetchedLogs = await fetchLogsForDates(supabase, userId, allDates);
       setLogs(fetchedLogs as DailyLog[]);
+
+      const notes = await fetchJournalNotes(supabase, userId);
+      setJournalNotes(notes);
     } finally {
       setLoading(false);
     }
   }, [supabase, userId, allDates]);
+
+  const refreshNotes = useCallback(async () => {
+    const notes = await fetchJournalNotes(supabase, userId);
+    setJournalNotes(notes);
+  }, [supabase, userId]);
 
   useEffect(() => {
     refresh();
@@ -185,11 +197,13 @@ export function AppProvider({
         habits,
         tiersWithHabits,
         logs,
+        journalNotes,
         loading,
         weekDates,
         setWeekAnchor,
         weekAnchor,
         refresh,
+        refreshNotes,
         updateHabitStatus,
         updateTextContent,
         updateDeepWork,

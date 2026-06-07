@@ -4,6 +4,7 @@ import { AppProvider } from "@/components/providers/AppProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AppNav } from "@/components/layout/AppNav";
 import { ReminderChecker } from "@/components/reminders/ReminderChecker";
+import { DailyPrompts } from "@/components/prompts/DailyPrompts";
 import type { Profile } from "@/lib/types";
 
 export default async function AppLayout({
@@ -43,6 +44,7 @@ export default async function AppLayout({
     <ThemeProvider initialTheme={(profile as Profile)?.theme ?? "system"}>
       <AppProvider userId={user.id} initialProfile={profile as Profile | null}>
         <ReminderChecker />
+        <DailyPrompts />
         <div className="min-h-dvh flex flex-col md:flex-row">
           <AppNav />
           <main className="flex-1 pb-24 md:pb-6 overflow-x-hidden">

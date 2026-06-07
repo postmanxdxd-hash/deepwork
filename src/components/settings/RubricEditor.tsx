@@ -8,23 +8,11 @@ import {
   addTier,
   deleteHabit,
   deleteTier,
-  updateHabit,
   updateRubricName,
   updateTier,
 } from "@/lib/rubric/editor";
-import type { Cadence, Habit, HabitType, Tier } from "@/lib/types";
-
-const HABIT_TYPES: { value: HabitType; label: string }[] = [
-  { value: "standard", label: "Standard (tap X/•/—)" },
-  { value: "text", label: "Text (write = done)" },
-  { value: "deepwork", label: "Deep Work blocks" },
-  { value: "gym", label: "Gym (weekly)" },
-];
-
-const CADENCES: { value: Cadence; label: string }[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-];
+import { HabitEditorRow } from "@/components/settings/HabitEditorRow";
+import type { Tier } from "@/lib/types";
 
 function inputClass() {
   return "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
@@ -63,16 +51,6 @@ export function RubricEditor() {
   const handleTierField = (tier: Tier, field: keyof Tier, value: string | number) => {
     run(async () => {
       await updateTier(supabase, tier.id, { [field]: value });
-    });
-  };
-
-  const handleHabitField = (
-    habit: Habit,
-    field: keyof Habit,
-    value: string | number
-  ) => {
-    run(async () => {
-      await updateHabit(supabase, habit.id, { [field]: value });
     });
   };
 
@@ -153,11 +131,7 @@ export function RubricEditor() {
                           className={inputClass()}
                           defaultValue={tier.attempted_pts}
                           onBlur={(e) =>
-                            handleTierField(
-                              tier,
-                              "attempted_pts",
-                              parseInt(e.target.value, 10)
-                            )
+                            handleTierField(tier, "attempted_pts", parseInt(e.target.value, 10))
                           }
                         />
                       </div>
@@ -177,69 +151,20 @@ export function RubricEditor() {
 
                   <div className="space-y-2 mb-3">
                     {th.map((habit) => (
-                      <div
+                      <HabitEditorRow
                         key={habit.id}
-                        className="rounded-lg bg-[var(--bg)] p-2.5 space-y-2"
-                      >
-                        <div className="flex gap-2">
-                          <input
-                            className={inputClass() + " w-12 text-center"}
-                            defaultValue={habit.icon}
-                            maxLength={4}
-                            onBlur={(e) =>
-                              handleHabitField(habit, "icon", e.target.value)
-                            }
-                          />
-                          <input
-                            className={inputClass() + " flex-1"}
-                            defaultValue={habit.name}
-                            onBlur={(e) =>
-                              handleHabitField(habit, "name", e.target.value)
-                            }
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm(`Delete "${habit.name}"?`)) {
-                                run(async () => {
-                                  await deleteHabit(supabase, habit.id);
-                                });
-                              }
-                            }}
-                            className="text-[var(--danger)] text-xs px-2 cursor-pointer hover:bg-[var(--danger)]/10 rounded-lg"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                        <div className="flex gap-2">
-                          <select
-                            className={inputClass()}
-                            defaultValue={habit.type}
-                            onChange={(e) =>
-                              handleHabitField(habit, "type", e.target.value)
-                            }
-                          >
-                            {HABIT_TYPES.map((t) => (
-                              <option key={t.value} value={t.value}>
-                                {t.label}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className={inputClass()}
-                            defaultValue={habit.cadence}
-                            onChange={(e) =>
-                              handleHabitField(habit, "cadence", e.target.value)
-                            }
-                          >
-                            {CADENCES.map((c) => (
-                              <option key={c.value} value={c.value}>
-                                {c.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
+                        habit={habit}
+                        supabase={supabase}
+                        saving={saving}
+                        onSaved={refresh}
+                        onDelete={() => {
+                          if (confirm(`Delete "${habit.name}"?`)) {
+                            run(async () => {
+                              await deleteHabit(supabase, habit.id);
+                            });
+                          }
+                        }}
+                      />
                     ))}
                   </div>
 

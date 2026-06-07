@@ -16,6 +16,7 @@ export interface TemplateHabit {
   icon: string;
   type: Habit["type"];
   cadence: Habit["cadence"];
+  role?: "mit" | "highlight";
 }
 
 export const JUNE_2026_TEMPLATE: TemplateTier[] = [
@@ -31,7 +32,7 @@ export const JUNE_2026_TEMPLATE: TemplateTier[] = [
       { name: "Religious Habit 1", icon: "🕌", type: "standard", cadence: "daily" },
       { name: "Religious Habit 2", icon: "📿", type: "standard", cadence: "daily" },
       { name: "Religious Habit 3", icon: "🤲", type: "standard", cadence: "daily" },
-      { name: "Highlight of the Day", icon: "✨", type: "text", cadence: "daily" },
+      { name: "Highlight of the Day", icon: "✨", type: "text", cadence: "daily", role: "highlight" },
     ],
   },
   {
@@ -48,7 +49,7 @@ export const JUNE_2026_TEMPLATE: TemplateTier[] = [
       { name: "Journal 10 mins", icon: "📝", type: "standard", cadence: "daily" },
       { name: "Quran 5 pages", icon: "📗", type: "standard", cadence: "daily" },
       { name: "Wake before 7:50AM", icon: "⏰", type: "standard", cadence: "daily" },
-      { name: "Single Most Important Task", icon: "🎯", type: "text", cadence: "daily" },
+      { name: "Single Most Important Task", icon: "🎯", type: "text", cadence: "daily", role: "mit" },
     ],
   },
   {
