@@ -1,7 +1,7 @@
 "use client";
 
 import type { DailyLog, Habit, Tier } from "@/lib/types";
-import { shouldApplyBlankPenalties } from "@/lib/reminders/timezone";
+import { isWeekend, shouldApplyBlankPenalties } from "@/lib/reminders/timezone";
 import { GymRow } from "./GymRow";
 import { TextHabitRow } from "./TextHabitRow";
 
@@ -30,7 +30,11 @@ export function WeeklyLogSection({
   onGym,
   onTextChange,
 }: WeeklyLogSectionProps) {
-  if (!gymHabit && !weeklyReviewHabit) return null;
+  const showWeeklyReview =
+    Boolean(weeklyReviewHabit && weeklyReviewTier) &&
+    isWeekend(dateKey, timezone);
+
+  if (!gymHabit && !showWeeklyReview) return null;
 
   const logFor = (habitId: string, logDate: string) =>
     logs.find((l) => l.habit_id === habitId && l.log_date === logDate);
@@ -58,7 +62,7 @@ export function WeeklyLogSection({
           onChange={(s) => onGym(gymHabit.id, s)}
         />
       )}
-      {weeklyReviewHabit && weeklyReviewTier && (
+      {showWeeklyReview && weeklyReviewHabit && weeklyReviewTier && (
         <TextHabitRow
           habit={weeklyReviewHabit}
           tier={weeklyReviewTier}

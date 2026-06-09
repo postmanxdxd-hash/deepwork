@@ -55,6 +55,20 @@ export function formatTimeHHMM(time: string): string {
  * - Past calendar days: yes
  * - Today: only from 4:00 AM local time onward
  */
+/** Saturday or Sunday in the user's timezone (for `YYYY-MM-DD`). */
+export function isWeekend(
+  dateKey: string,
+  timezone: string = DEFAULT_TZ
+): boolean {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const utcNoon = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    weekday: "long",
+  }).format(utcNoon);
+  return weekday === "Saturday" || weekday === "Sunday";
+}
+
 export function shouldApplyBlankPenalties(
   dateKey: string,
   timezone: string = DEFAULT_TZ,

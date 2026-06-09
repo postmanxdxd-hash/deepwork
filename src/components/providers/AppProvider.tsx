@@ -163,9 +163,16 @@ export function AppProvider({
     date: string,
     content: string
   ) => {
+    const habit = habits.find((h) => h.id === habitId);
+    const trimmed = content.trim();
+    const status = trimmed
+      ? habit?.role === "mit"
+        ? "attempted"
+        : "done"
+      : null;
     const data = await upsertLog(supabase, userId, habitId, date, {
       content,
-      status: content.trim() ? "done" : null,
+      status,
     });
     setLogs((prev) => {
       const rest = prev.filter(

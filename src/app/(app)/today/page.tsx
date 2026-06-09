@@ -60,9 +60,13 @@ export default function TodayPage() {
   const mitHabit = useMemo(() => findHabitByRole(habits, "mit"), [habits]);
   const fajrHabit = useMemo(() => findFajrHabit(habits, tiers), [habits, tiers]);
 
-  const mitContent =
-    logs.find((l) => l.habit_id === mitHabit?.id && l.log_date === dateKey)
-      ?.content ?? "";
+  const mitLog = mitHabit
+    ? logs.find((l) => l.habit_id === mitHabit.id && l.log_date === dateKey)
+    : undefined;
+  const mitContent = mitLog?.content ?? "";
+  const mitTier = mitHabit
+    ? tiers.find((t) => t.id === mitHabit.tier_id)
+    : undefined;
 
   const fajrLog = fajrHabit
     ? logs.find((l) => l.habit_id === fajrHabit.id && l.log_date === dateKey)
@@ -138,6 +142,10 @@ export default function TodayPage() {
     await updateHabitStatus(habitId, dateKey, "done");
   };
 
+  const handleMitDone = async (habitId: string) => {
+    await updateHabitStatus(habitId, dateKey, "done");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50dvh] text-[var(--text-muted)]">
@@ -207,13 +215,16 @@ export default function TodayPage() {
           />
         )}
 
-        {mitHabit && (
+        {mitHabit && mitTier && (
           <MitInlineField
             habit={mitHabit}
+            tier={mitTier}
             content={mitContent}
+            status={mitLog?.status ?? null}
             dateKey={dateKey}
             todayKey={todayStr}
             onSave={handleTextChange}
+            onMarkDone={handleMitDone}
           />
         )}
 

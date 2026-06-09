@@ -121,7 +121,7 @@ Personalized habit tracking web app with points-based scoring, streaks, journal 
 | Type | Logging | Scoring |
 |------|---------|---------|
 | `standard` | Tap to cycle done → attempted → blank → unset | Tier points |
-| `text` | Write content = done | done_pts if filled, blank_pts if empty |
+| `text` | Write content (highlight = done; MIT = attempted until marked done) | done_pts if filled (highlight) or marked done (MIT); attempted_pts if MIT filled only; blank_pts if empty |
 | `deepwork` | −/+ block counter (25-min blocks, unlimited) | See [Deep Work](#deep-work) |
 | `gym` | Session count 0–5 | Week view only |
 
@@ -139,6 +139,7 @@ Identified by dedicated `role` column only (`src/lib/habits/identify.ts`). No na
 
 | Habit | Behavior |
 |-------|----------|
+| **MIT** | Fill text → attempted (±0). **Mark done** button → +2 pts. Editing text after done resets to attempted. |
 | **Fajr** | Binary: done ↔ unset only (no attempted). Identified by FAJR tier label. |
 | **Deep Work** | 0 or N blocks only (no attempted state). |
 | **Gym** | Logged on Week view; excluded from Today. |
@@ -246,7 +247,7 @@ Positive points (done habits) always count immediately. Only automatic minuses f
 
 1. Header — week strip, score cards, streaks, progress bar
 2. **Fajr shortcut** — one-tap "Mark Fajr done" when unlogged today
-3. **MIT inline field** — persistent text input (never blocking)
+3. **MIT inline field** — persistent text input (never blocking). Filling in sets **attempted** (±0); **Mark done** button awards +2 pts
 4. Tier sections in order: **Fajr → Deep Work → Medium → Easy**
 
 **Excluded from main tier list:**
@@ -254,8 +255,8 @@ Positive points (done habits) always count immediately. Only automatic minuses f
 - MIT habit row (shown via inline field instead)
 
 **Weekly section (bottom of Today):**
-- Gym session counter (0–5)
-- Weekly Review textarea
+- Gym session counter (0–5) — every day
+- Weekly Review textarea — **Saturday & Sunday only** (Beirut timezone)
 
 **Score cards:**
 - **TODAY** — current day score + done count

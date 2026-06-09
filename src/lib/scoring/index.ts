@@ -5,7 +5,7 @@ import type {
   Tier,
   WeekQuality,
 } from "@/lib/types";
-import { isFajrTier } from "@/lib/habits/identify";
+import { getHabitRole, isFajrTier } from "@/lib/habits/identify";
 import { shouldApplyBlankPenalties } from "@/lib/reminders/timezone";
 import {
   GYM_POINTS,
@@ -38,13 +38,21 @@ function logFor(
   return logs.find((l) => l.habit_id === habitId && l.log_date === date);
 }
 
+function isMitHabit(habit: Habit): boolean {
+  return getHabitRole(habit) === "mit";
+}
+
 export function effectiveStatus(
   habit: Habit,
   log: DailyLog | undefined
 ): HabitStatus | null {
   if (habit.type === "text") {
     const content = log?.content?.trim();
-    return content ? "done" : null;
+    if (!content) return null;
+    if (isMitHabit(habit)) {
+      return log?.status === "done" ? "done" : "attempted";
+    }
+    return "done";
   }
   if (habit.type === "deepwork") {
     const blocks = log?.deepwork_blocks ?? 0;
@@ -67,6 +75,11 @@ export function pointsForHabitLog(
   }
   if (habit.type === "text") {
     const content = log?.content?.trim();
+    if (isMitHabit(habit)) {
+      if (!content) return applyBlankPenalties ? tier.blank_pts : 0;
+      if (log?.status === "done") return tier.done_pts;
+      return tier.attempted_pts;
+    }
     if (content) return tier.done_pts;
     if (!applyBlankPenalties) return 0;
     return tier.blank_pts;
@@ -334,7 +347,13 @@ export function statusSymbol(
   log: DailyLog | undefined
 ): string {
   if (habit.type === "text") {
-    return log?.content?.trim() ? "✎" : "—";
+    const content = log?.content?.trim();
+    if (!content) return "—";
+    if (isMitHabit(habit)) {
+      if (log?.status === "done") return "X";
+      return "•";
+    }
+    return "✎";
   }
   if (habit.type === "deepwork") {
     const b = log?.deepwork_blocks ?? 0;
