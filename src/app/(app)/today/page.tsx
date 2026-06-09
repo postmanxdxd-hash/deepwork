@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "@/components/providers/AppProvider";
 import { WeekStrip } from "@/components/layout/WeekStrip";
 import { ScoreCards } from "@/components/layout/ScoreCards";
@@ -145,6 +145,29 @@ export default function TodayPage() {
   const handleMitDone = async (habitId: string) => {
     await updateHabitStatus(habitId, dateKey, "done");
   };
+
+  const mitMigratedRef = useRef(false);
+  useEffect(() => {
+    if (loading || mitMigratedRef.current || !mitHabit || dateKey !== todayStr) {
+      return;
+    }
+    const key = "mit-attempted-migration-v1";
+    if (localStorage.getItem(key)) {
+      mitMigratedRef.current = true;
+      return;
+    }
+    const log = logs.find(
+      (l) => l.habit_id === mitHabit.id && l.log_date === todayStr
+    );
+    mitMigratedRef.current = true;
+    if (log?.content?.trim() && log.status === "done") {
+      updateHabitStatus(mitHabit.id, todayStr, "attempted").finally(() => {
+        localStorage.setItem(key, "1");
+      });
+    } else {
+      localStorage.setItem(key, "1");
+    }
+  }, [loading, mitHabit, dateKey, todayStr, logs, updateHabitStatus]);
 
   if (loading) {
     return (

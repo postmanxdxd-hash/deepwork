@@ -4,6 +4,8 @@ export type HabitRole = "mit" | "highlight";
 
 export function getHabitRole(habit: Habit): HabitRole | null {
   if (habit.role === "mit" || habit.role === "highlight") return habit.role;
+  const legacy = habit.special_config?.role;
+  if (legacy === "mit" || legacy === "highlight") return legacy;
   return null;
 }
 

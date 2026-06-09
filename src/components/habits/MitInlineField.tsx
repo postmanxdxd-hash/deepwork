@@ -26,9 +26,10 @@ export function MitInlineField({
   onMarkDone,
 }: MitInlineFieldProps) {
   const [draft, setDraft] = useState(content);
+  const [markingDone, setMarkingDone] = useState(false);
   const focusedRef = useRef(false);
   const isToday = dateKey === todayKey;
-  const hasContent = content.trim().length > 0;
+  const hasText = Boolean(content.trim() || draft.trim());
   const isDone = status === "done";
 
   useEffect(() => {
@@ -45,8 +46,23 @@ export function MitInlineField({
     }
   };
 
+  const handleMarkDone = async () => {
+    const trimmed = draft.trim();
+    if (!trimmed || markingDone) return;
+    setMarkingDone(true);
+    try {
+      focusedRef.current = false;
+      if (trimmed !== content.trim()) {
+        await onSave(habit.id, trimmed);
+      }
+      await onMarkDone(habit.id);
+    } finally {
+      setMarkingDone(false);
+    }
+  };
+
   if (!isToday) {
-    if (!hasContent) return null;
+    if (!hasText) return null;
     return (
       <div
         className="p-4 mb-4 rounded-xl border"
@@ -108,21 +124,22 @@ export function MitInlineField({
         className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2.5 text-base text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
       />
 
-      {hasContent && !isDone && (
+      {hasText && !isDone && (
         <button
           type="button"
-          onClick={() => onMarkDone(habit.id)}
-          className="mt-3 w-full rounded-xl py-3 px-4 text-left font-bold text-white shadow-md active:scale-[0.98] transition-soft"
+          onClick={handleMarkDone}
+          disabled={markingDone}
+          className="mt-3 w-full rounded-xl py-3 px-4 text-left font-bold text-white shadow-md active:scale-[0.98] transition-soft disabled:opacity-70"
           style={{ background: tier.color_accent }}
         >
-          Mark done · +{tier.done_pts} pts
+          {markingDone ? "Saving…" : `Mark done · +${tier.done_pts} pts`}
           <span className="block text-xs font-normal text-white/80 mt-0.5">
             Filled in counts as attempted (±0). Tap when you actually finished it.
           </span>
         </button>
       )}
 
-      {hasContent && isDone && (
+      {hasText && isDone && (
         <div className="mt-3 flex items-center gap-2 text-sm font-bold text-[var(--success)]">
           <span
             className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm"
@@ -134,7 +151,7 @@ export function MitInlineField({
         </div>
       )}
 
-      {!hasContent && (
+      {!hasText && (
         <p className="mt-2 text-[11px] text-[var(--text-muted)]">
           {tier.blank_pts < 0 ? `${tier.blank_pts} if left empty` : "No penalty if empty"}
         </p>
