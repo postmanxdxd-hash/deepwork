@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Habit } from "@/lib/types";
 
 interface MitInlineFieldProps {
@@ -19,16 +19,21 @@ export function MitInlineField({
   onSave,
 }: MitInlineFieldProps) {
   const [draft, setDraft] = useState(content);
+  const focusedRef = useRef(false);
   const isToday = dateKey === todayKey;
 
   useEffect(() => {
-    setDraft(content);
+    if (!focusedRef.current) {
+      setDraft(content);
+    }
   }, [content, dateKey]);
 
-  const handleBlur = async () => {
+  const commit = async () => {
+    focusedRef.current = false;
     const trimmed = draft.trim();
-    if (trimmed === content.trim()) return;
-    await onSave(habit.id, trimmed);
+    if (trimmed !== content.trim()) {
+      await onSave(habit.id, trimmed);
+    }
   };
 
   if (!isToday) {
@@ -51,14 +56,20 @@ export function MitInlineField({
       >
         {habit.icon} Most Important Task
       </label>
-      <input
+      <textarea
         id="mit-inline"
-        type="text"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={handleBlur}
+        onFocus={() => {
+          focusedRef.current = true;
+        }}
+        onBlur={commit}
         placeholder="What's the one thing that matters most today?"
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+        rows={2}
+        autoComplete="off"
+        autoCorrect="on"
+        enterKeyHint="done"
+        className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2.5 text-base text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
       />
     </div>
   );

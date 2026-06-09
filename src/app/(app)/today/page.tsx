@@ -9,6 +9,7 @@ import { TierSection } from "@/components/habits/TierSection";
 import { HabitRenameModal } from "@/components/habits/HabitRenameModal";
 import { MitInlineField } from "@/components/habits/MitInlineField";
 import { FajrShortcut } from "@/components/habits/FajrShortcut";
+import { WeeklyLogSection } from "@/components/habits/WeeklyLogSection";
 import type { Habit } from "@/lib/types";
 import { formatDisplayDate, formatMonthYear, getWeekDates } from "@/lib/dates";
 import {
@@ -43,6 +44,7 @@ export default function TodayPage() {
     updateHabitStatus,
     updateTextContent,
     updateDeepWork,
+    updateGym,
     loading,
   } = useApp();
 
@@ -53,6 +55,7 @@ export default function TodayPage() {
   const [renameHabit, setRenameHabit] = useState<Habit | null>(null);
 
   const dateKey = weekDates[selectedDay];
+  const gymLogDate = weekDates[weekDates.length - 1];
 
   const mitHabit = useMemo(() => findHabitByRole(habits, "mit"), [habits]);
   const fajrHabit = useMemo(() => findFajrHabit(habits, tiers), [habits, tiers]);
@@ -76,6 +79,19 @@ export default function TodayPage() {
         fajrHabitId: fajrHabit?.id,
       }),
     [tiersWithHabits, hideFajrInList, fajrHabit?.id]
+  );
+
+  const gymHabit = useMemo(() => habits.find((h) => h.type === "gym"), [habits]);
+  const weeklyReviewHabit = useMemo(
+    () => habits.find((h) => h.type === "text" && h.cadence === "weekly"),
+    [habits]
+  );
+  const weeklyReviewTier = useMemo(
+    () =>
+      weeklyReviewHabit
+        ? tiers.find((t) => t.id === weeklyReviewHabit.tier_id)
+        : undefined,
+    [weeklyReviewHabit, tiers]
   );
 
   const dayScores = useMemo(
@@ -220,6 +236,19 @@ export default function TodayPage() {
             timezone={timezone}
           />
         ))}
+
+        <WeeklyLogSection
+          gymHabit={gymHabit}
+          weeklyReviewHabit={weeklyReviewHabit}
+          weeklyReviewTier={weeklyReviewTier}
+          weekDates={weekDates}
+          dateKey={dateKey}
+          gymLogDate={gymLogDate}
+          logs={logs}
+          timezone={timezone}
+          onGym={(id, s) => updateGym(id, gymLogDate, s)}
+          onTextChange={handleTextChange}
+        />
 
         <HabitRenameModal
           habit={renameHabit}

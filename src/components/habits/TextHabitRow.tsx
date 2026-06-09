@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import type { Habit, Tier } from "@/lib/types";
 import type { DailyLog } from "@/lib/types";
@@ -8,7 +9,7 @@ interface TextHabitRowProps {
   habit: Habit;
   tier: Tier;
   log: DailyLog | undefined;
-  onChange: (content: string) => void;
+  onSave: (content: string) => void | Promise<void>;
   onEdit?: () => void;
   multiline?: boolean;
   placeholder?: string;
@@ -19,16 +20,35 @@ export function TextHabitRow({
   habit,
   tier,
   log,
-  onChange,
+  onSave,
   onEdit,
   multiline = false,
   placeholder,
   applyBlankPenalties = true,
 }: TextHabitRowProps) {
-  const content = log?.content ?? "";
-  const hasContent = content.trim().length > 0;
+  const savedContent = log?.content ?? "";
+  const [draft, setDraft] = useState(savedContent);
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setDraft(savedContent);
+    }
+  }, [savedContent, log?.id]);
+
+  const hasContent = savedContent.trim().length > 0;
   const emptyPts = applyBlankPenalties ? tier.blank_pts : 0;
   const pts = hasContent ? tier.done_pts : emptyPts;
+
+  const commit = async () => {
+    focusedRef.current = false;
+    if (draft.trim() !== savedContent.trim()) {
+      await onSave(draft);
+    }
+  };
+
+  const fieldClass =
+    "w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-base text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
   return (
     <div
@@ -71,8 +91,8 @@ export function TextHabitRow({
               ? `+${pts}`
               : applyBlankPenalties
                 ? `${pts} if empty`
-                : "not due yet"}
-            {" "}pts
+                : "not due yet"}{" "}
+            pts
           </div>
         </div>
         {hasContent && (
@@ -86,19 +106,32 @@ export function TextHabitRow({
       </div>
       {multiline ? (
         <textarea
-          value={content}
-          onChange={(e) => onChange(e.target.value)}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onFocus={() => {
+            focusedRef.current = true;
+          }}
+          onBlur={commit}
           placeholder={placeholder ?? "Write your reflection..."}
           rows={4}
-          className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          autoComplete="off"
+          autoCorrect="on"
+          className={`${fieldClass} resize-none`}
         />
       ) : (
         <input
           type="text"
-          value={content}
-          onChange={(e) => onChange(e.target.value)}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onFocus={() => {
+            focusedRef.current = true;
+          }}
+          onBlur={commit}
           placeholder={placeholder ?? "What's the highlight?"}
-          className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          autoComplete="off"
+          autoCorrect="on"
+          enterKeyHint="done"
+          className={fieldClass}
         />
       )}
     </div>

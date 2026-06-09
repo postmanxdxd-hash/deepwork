@@ -1,6 +1,6 @@
 import type { Habit, TierWithHabits } from "@/lib/types";
 
-/** Gym and weekly habits belong on the Week view only. */
+/** Gym and weekly review are logged at the bottom of Today (not in main tier list). */
 export function isWeeklyOnlyOnToday(habit: Habit): boolean {
   return habit.type === "gym" || habit.cadence === "weekly";
 }

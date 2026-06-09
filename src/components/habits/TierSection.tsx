@@ -84,7 +84,7 @@ export function TierSection({
               tier={tier}
               log={log}
               applyBlankPenalties={applyBlankPenalties}
-              onChange={(c) => onTextChange(habit.id, c)}
+              onSave={(c) => onTextChange(habit.id, c)}
               onEdit={onEditHabit ? () => onEditHabit(habit) : undefined}
               placeholder={
                 habit.name.includes("MIT") || habit.name.includes("Important")
